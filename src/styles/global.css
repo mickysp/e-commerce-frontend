@@ -1,0 +1,7 @@
+body,
+.v-application,
+.swal2-container .swal2-popup {
+  font-family: "Noto Sans Thai", system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, sans-serif !important;
+  line-height: 140% !important;
+  letter-spacing: 0 !important;
+}

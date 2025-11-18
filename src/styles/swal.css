@@ -1,0 +1,177 @@
+/* =======================
+   SweetAlert2 Popup Styles
+======================= */
+.swal-popup {
+    width: 400px !important;
+    border-radius: 12px !important;
+    box-shadow: 0px 0px 8px -4px #10182808, 0px 0px 24px -4px #10182814 !important;
+}
+
+.swal-popup-success {
+    width: 400px !important;
+    height: 226px !important;
+    border-radius: 12px !important;
+    box-shadow: 0px 0px 8px -4px #10182808, 0px 0px 24px -4px #10182814 !important;
+}
+
+.swal-popup-cancel-document {
+    border-radius: 12px !important;
+    box-shadow: 0px 0px 8px -4px #10182808, 0px 0px 24px -4px #10182814 !important;
+}
+
+/* =======================
+   Titles
+======================= */
+.swal-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1F2A39;
+    margin-top: -16px;
+    margin-bottom: -8px;
+}
+
+.swal-title-cancel-document {
+    font-size: 18px;
+    font-weight: 500;
+    color: #1F2A39;
+}
+
+.swal-title-success {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1F2A39;
+    margin-top: -16px;
+    margin-bottom: 16px;
+}
+
+/* =======================
+   Text
+======================= */
+.swal-text {
+    font-size: 14px;
+    font-weight: 400;
+    color: #6B717F;
+}
+
+/* =======================
+   Buttons
+======================= */
+.swal-confirm,
+.swal-cancel.outline {
+    font-size: 16px;
+    font-weight: 500;
+    border-radius: 8px;
+    padding: 9px 16px;
+    min-width: 84px;
+    height: 40px;
+    margin-top: -8px;
+}
+
+.swal-confirm:disabled {
+  background-color: #F3F5F7 !important;
+  color: #B0B5BF !important; 
+  border: none; 
+}
+
+.swal-confirm {
+    color: #fff !important;
+    background-color: #3D78C8 !important;
+    border: none !important;
+    margin-left: 8px !important;
+}
+
+.swal-cancel.outline {
+    color: #3D78C8;
+    background-color: transparent !important;
+    border: 1px solid #3D78C8 !important;
+    margin-right: 8px !important;
+}
+
+/* =======================
+   Close Button
+======================= */
+.swal2-close {
+    color: #6B717F !important;
+    font-size: 24px !important;
+    margin-top: 4px !important;
+    margin-right: 4px !important;
+}
+
+.swal2-close:hover {
+    color: #3D78C8 !important;
+}
+
+/* =======================
+   Textarea Card
+======================= */
+.textarea-card {
+    display: flex;
+    flex-direction: column;
+    background-color: #F9FBFC;
+    border-radius: 16px;
+    padding: 16px;
+    gap: 16px;
+}
+
+.textarea-label {
+    font-size: 16px;
+    font-weight: 400;
+    color: #1F2A39;
+    display: block;
+    text-align: left;
+}
+
+/* =======================
+   Textarea
+======================= */
+.swal-popup-cancel-document textarea {
+    font-size: 14px;
+    font-weight: 400;
+    color: #1F2A39;
+    border-radius: 8px;
+    border: 1px solid #E5E7EB;
+    background-color: #FFFFFF;
+    width: 100%;
+    height: 86px;
+    padding: 8px 0 0 16px;
+    resize: none;
+}
+
+.swal-popup-cancel-document .textarea-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.swal-popup-cancel-document .textarea-resize-icon {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    bottom: 10px;
+    right: 2px;
+    cursor: se-resize;
+    background-image: url('@/assets/select/box_description.png');
+    background-size: cover;
+}
+
+/* ไอคอนตอน textarea focus */
+.swal-popup-cancel-document textarea:focus+.textarea-resize-icon {
+    background-image: url('@/assets/select/box_description_focus.png');
+}
+
+/* กำหนด style textarea ตอน focus */
+.swal-popup-cancel-document textarea:focus {
+    outline: none;
+    border-color: #CCCCCC;
+}
+
+.swal-popup-cancel-document textarea::placeholder {
+    color: #B0B5BF;
+}
+
+/* =======================
+   Image
+======================= */
+.swal-image-circle {
+    border-radius: 50%;
+    object-fit: cover;
+}
