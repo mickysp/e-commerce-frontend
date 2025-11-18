@@ -1,9 +1,14 @@
 <template>
   <div>
-    <v-app-bar app flat color="#FFFFFF" class="kg-navbar">
+    <v-app-bar app flat color="#FFFFFF" class="kg-navbar" fixed>
       <div class="navbar-inner">
         <v-container class="px-6">
-          <v-row no-gutters align="center" justify="space-between">
+          <v-row
+            v-if="!isMobile"
+            no-gutters
+            align="center"
+            justify="space-between"
+          >
             <v-col
               cols="auto"
               class="d-flex align-center brand-click"
@@ -104,10 +109,84 @@
               </v-menu>
             </v-col>
           </v-row>
+
+          <!-- Mobile / Tablet bar -->
+          <v-row
+            v-else
+            no-gutters
+            align="center"
+            justify="space-between"
+            class="mobile-bar"
+          >
+            <v-col
+              cols="auto"
+              class="d-flex align-center brand-click"
+              @click="goHome"
+            >
+              <v-img
+                :src="require('@/assets/logo.png')"
+                alt="ELSON"
+                class="brand-logo mr-2"
+                contain
+              />
+              <span class="brand-text mobile-brand-text">ELSONlll</span>
+            </v-col>
+
+            <v-col cols="auto" class="d-flex align-center justify-end">
+              <!-- search -->
+              <v-btn icon class="mr-1">
+                <v-icon>mdi-magnify</v-icon>
+              </v-btn>
+
+              <!-- cart -->
+              <v-btn icon class="mr-1">
+                <v-icon>mdi-cart-outline</v-icon>
+              </v-btn>
+
+              <!-- bell -->
+              <v-btn icon class="mr-1">
+                <v-icon>mdi-bell-outline</v-icon>
+              </v-btn>
+
+              <!-- profile (มือถือ) -->
+              <!-- ยังไม่ล็อกอิน: ไปหน้าเข้าสู่ระบบ -->
+              <v-btn
+                v-if="!isLoggedIn"
+                icon
+                class="mr-1 mobile-avatar-btn"
+                @click="goLogin"
+              >
+                <v-icon>mdi-account-circle</v-icon>
+              </v-btn>
+
+              <v-btn
+                v-else
+                icon
+                class="mr-1 mobile-avatar-btn"
+                @click="goProfile"
+              >
+                <v-avatar size="28">
+                  <img
+                    v-if="profileImageUrl"
+                    :src="profileImageUrl"
+                    :alt="currentUser ? currentUser.username : 'avatar'"
+                    @error="onAvatarError"
+                  />
+                  <v-icon v-else small>mdi-account-circle</v-icon>
+                </v-avatar>
+              </v-btn>
+
+              <v-btn icon @click="toggleMobileMenu">
+                <v-icon v-if="!mobileMenu">mdi-menu</v-icon>
+                <v-icon v-else>mdi-close</v-icon>
+              </v-btn>
+            </v-col>
+          </v-row>
         </v-container>
       </div>
     </v-app-bar>
-    <div class="sub-navbar">
+
+    <div class="sub-navbar desktop-only">
       <div class="sub-navbar-inner">
         <v-container class="px-6">
           <v-row justify="center" no-gutters class="menu-row">
@@ -204,6 +283,43 @@
         </v-container>
       </div>
     </div>
+
+    <!-- Mobile full-screen menu -->
+    <v-expand-transition>
+      <div v-if="isMobile && mobileMenu" class="mobile-menu-overlay">
+        <div class="mobile-menu-header">
+          <v-btn icon @click="toggleMobileMenu">
+            <v-icon>mdi-close</v-icon>
+          </v-btn>
+        </div>
+
+        <v-list dense>
+          <v-list-item @click="handleMobileNav('home')">
+            <v-list-item-title>หน้าหลัก</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click="handleMobileNav('board')">
+            <v-list-item-title>กระดานข่าว</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click="handleMobileNav('delivery')">
+            <v-list-item-title>สินค้าเดลิเวอรี่</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click="handleMobileNav('register_seller')">
+            <v-list-item-title>เปิดร้านค้า</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click="handleMobileNav('login_seller')">
+            <v-list-item-title>เข้าสู่ระบบร้านค้า</v-list-item-title>
+          </v-list-item>
+
+          <v-list-item @click="handleMobileNav('aboutus')">
+            <v-list-item-title>เกี่ยวกับเรา</v-list-item-title>
+          </v-list-item>
+        </v-list>
+      </div>
+    </v-expand-transition>
   </div>
 </template>
 
@@ -217,48 +333,48 @@ export default {
     return {
       avatarError: false,
       user: null,
+      mobileMenu: false,
     };
   },
 
   computed: {
+    isMobile() {
+      const bp = this.$vuetify.breakpoint;
+      return bp && bp.width <= 1024;
+    },
+
     isLoggedIn() {
       const s = this.$store;
       return (
-        s?.getters?.isAuthenticated ||
+        (s && s.getters && s.getters.isAuthenticated) ||
         !!localStorage.getItem("token") ||
         !!localStorage.getItem("vuex")
       );
     },
 
     currentUser() {
-      return this.user || this.$store?.state?.auth?.user || null;
+      return (
+        (this.$store &&
+          this.$store.state &&
+          this.$store.state.auth &&
+          this.$store.state.auth.user) ||
+        this.user ||
+        null
+      );
     },
 
     profileImageUrl() {
       if (this.avatarError) return "";
-
       const user = this.currentUser;
       if (!user || !user.profileImage) return "";
-
       const raw = (user.profileImage || "").trim();
 
-      if (/^https?:\/\//i.test(raw)) {
-        console.log("[NAVBAR] final image URL (absolute) =", raw);
-        return raw;
-      }
+      if (/^https?:\/\//i.test(raw)) return raw;
 
       const apiBase = (
         process.env.VUE_APP_API_URL || "http://localhost:3000"
       ).replace(/\/+$/, "");
-      const url = raw.startsWith("/")
-        ? `${apiBase}${raw}`
-        : `${apiBase}/${raw}`;
-
-      console.log("[NAVBAR] profileImage raw  =", raw);
-      console.log("[NAVBAR] API base          =", apiBase);
-      console.log("[NAVBAR] final image URL   =", url);
-
-      return url;
+      return raw.startsWith("/") ? `${apiBase}${raw}` : `${apiBase}/${raw}`;
     },
   },
 
@@ -272,12 +388,33 @@ export default {
         await this.fetchProfile();
       }
     },
+
+    // ล็อก scroll ตอนเปิดเมนูมือถือ
+    mobileMenu(val) {
+      const body = document.body;
+      const html = document.documentElement;
+      if (val) {
+        body.style.overflow = "hidden";
+        html.style.overflow = "hidden";
+      } else {
+        body.style.overflow = "";
+        html.style.overflow = "";
+      }
+    },
   },
 
   async created() {
     if (this.isLoggedIn) {
       await this.fetchProfile();
     }
+  },
+
+  beforeDestroy() {
+    // กันกรณีออกจากหน้าไปแล้ว scroll ยัง lock อยู่
+    const body = document.body;
+    const html = document.documentElement;
+    body.style.overflow = "";
+    html.style.overflow = "";
   },
 
   methods: {
@@ -289,14 +426,12 @@ export default {
           this.$store.commit("auth/SET_USER", user);
         }
         this.avatarError = false;
-        console.log("[NAVBAR] user from api:", user);
       } catch (e) {
         console.error("[NAVBAR] getProfile error", e);
       }
     },
 
     onAvatarError() {
-      console.warn("[NAVBAR] avatar load error");
       this.avatarError = true;
     },
 
@@ -351,16 +486,42 @@ export default {
         this.safeGo({ name: "login" });
       }
     },
+
+    toggleMobileMenu() {
+      this.mobileMenu = !this.mobileMenu;
+    },
+
+    handleMobileNav(name) {
+      this.mobileMenu = false;
+      switch (name) {
+        case "home":
+          return this.goHome();
+        case "board":
+          return this.goBoard();
+        case "delivery":
+          return this.goDelivery();
+        case "register_seller":
+          return this.$router.push({ name: "register_seller" });
+        case "login_seller":
+          return this.goSellerLogin();
+        case "aboutus":
+          return this.goServices();
+      }
+    },
   },
 };
 </script>
 
 <style scoped>
 .kg-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   border-bottom: 1px solid #e5e7eb;
-  z-index: 20;
+  z-index: 30;
 }
-:deep(.kg-navbar .v-toolbar__content) {
+::v-deep .kg-navbar .v-toolbar__content {
   padding: 0 !important;
   display: flex;
   align-items: center;
@@ -378,7 +539,7 @@ export default {
   left: 0;
   right: 0;
   top: 64px;
-  z-index: 10;
+  z-index: 20;
   background: #fff;
   border-top: 1px solid #e5e7eb;
   border-bottom: 1px solid #e5e7eb;
@@ -437,14 +598,25 @@ export default {
   border-radius: 4px;
   width: 130px;
 }
-:deep(.v-avatar .v-icon) {
+::v-deep .v-avatar .v-icon {
   color: #111827;
   font-size: 28px;
 }
-:deep(.v-avatar img) {
+::v-deep .v-avatar img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+::v-deep .profile-menu-pop {
+  z-index: 3000 !important;
+}
+.profile-menu-pop ::v-deep .v-list-item__title {
+  font-size: 15px;
+  font-weight: 500;
+  color: #111827;
+}
+.profile-menu-pop ::v-deep .v-list-item__icon {
+  color: #cf2e18;
 }
 .menu-row {
   padding: 8px 0;
@@ -480,28 +652,65 @@ export default {
 .menu-dd {
   min-width: 200px;
 }
-.menu-dd :deep(.v-list-item) {
+.menu-dd ::v-deep .v-list-item {
   min-height: 36px;
 }
-.menu-dd :deep(.v-list-item__title) {
+.menu-dd ::v-deep .v-list-item__title {
   font-size: 14px;
 }
-:deep(.profile-menu-pop) {
-  z-index: 3000 !important;
+.mobile-bar {
+  padding: 4px 0;
+  min-height: 56px;
 }
-.profile-menu-pop :deep(.v-list-item__title) {
-  font-size: 15px;
-  font-weight: 500;
+.mobile-brand-text {
+  font-size: 18px;
+}
+.mobile-menu-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  z-index: 200;
+  display: flex;
+  flex-direction: column;
+  max-height: 100vh;
+  overflow-y: auto;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+.mobile-menu-header {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  padding: 8px 16px;
+}
+.mobile-menu-overlay ::v-deep .v-list {
+  padding-top: 0;
+}
+.mobile-menu-overlay ::v-deep .v-list-item {
+  min-height: 52px;
+  border-bottom: 1px solid #e5e7eb;
+}
+.mobile-menu-overlay ::v-deep .v-list-item__title {
+  font-size: 16px;
+}
+.mobile-avatar-btn {
+  padding: 0;
+}
+.mobile-avatar-btn ::v-deep .v-avatar {
+  box-shadow: 0 0 0 1px #e5e7eb;
+  background: #f9fafb;
+}
+.mobile-avatar-btn ::v-deep .v-avatar .v-icon {
+  font-size: 22px;
   color: #111827;
 }
-.profile-menu-pop :deep(.v-list-item__icon) {
-  color: #cf2e18;
-}
-
-/* Responsive */
-@media (max-width: 768px) {
-  .navbar-inner,
-  .sub-navbar-inner {
+@media (max-width: 1024px) {
+  .desktop-only {
+    display: none !important;
+  }
+  .navbar-inner {
     padding: 0 16px;
   }
   .search-box {
@@ -510,6 +719,12 @@ export default {
   .menu-row {
     gap: 16px;
     flex-wrap: wrap;
+  }
+}
+@media (max-width: 768px) {
+  .navbar-inner,
+  .sub-navbar-inner {
+    padding: 0 16px;
   }
 }
 </style>

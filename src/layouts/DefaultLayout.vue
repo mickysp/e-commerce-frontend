@@ -20,6 +20,12 @@ export default {
 
 <style scoped>
 .v-main {
-  min-height: 100vh;
+  min-height: auto !important;
+  height: auto !important;
 }
-</style> 
+@media (max-width: 1024px) {
+  :deep(main.v-main) {
+    padding-top: 0px !important;
+  }
+}
+</style>
