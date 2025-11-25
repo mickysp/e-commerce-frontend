@@ -17,6 +17,35 @@ function decodeJwt(token = "") {
   }
 }
 
+const TOKEN_KEYS = {
+  user: "user_token",
+  seller: "seller_token",
+  admin: "admin_token",
+};
+
+const ROLE_KEYS = {
+  user: "user_role",
+  seller: "seller_role",
+  admin: "admin_role",
+};
+
+function clearAuthFromStorage(authGroup = "user") {
+  const tokenKey = TOKEN_KEYS[authGroup];
+  const roleKey = ROLE_KEYS[authGroup];
+
+  try {
+    if (tokenKey) localStorage.removeItem(tokenKey);
+    if (roleKey) localStorage.removeItem(roleKey);
+
+    if (authGroup === "user" || authGroup === "seller") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("role");
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
 const initialState = () => ({
   auth: {
     access_token: "",
@@ -39,7 +68,7 @@ const initialState = () => ({
       referralCount: 0,
     },
   },
-  seller: {                 
+  seller: {
     sellerId: "",
     shopName: "",
     email: "",
@@ -51,7 +80,7 @@ export default new Vuex.Store({
   plugins: [
     createPersistedState({
       key: "vuex",
-      paths: ["auth", "user", "seller"], 
+      paths: ["user", "seller"],
     }),
   ],
 
@@ -88,8 +117,8 @@ export default new Vuex.Store({
     role: (state, getters) =>
       (getters.tokenPayload?.role || state.user.role || "user").toLowerCase(),
 
-    isAdmin: (state, getters) => getters.role === "admin",   
-    isSeller: (state, getters) => getters.role === "seller", 
+    isAdmin: (state, getters) => getters.role === "admin",
+    isSeller: (state, getters) => getters.role === "seller",
     userId: (state) => state.user._id || "",
     defaultAddressId: (state) => state.user.defaultAddress || null,
     maskedEmail: (state) => {
@@ -188,12 +217,16 @@ export default new Vuex.Store({
       });
     },
 
-    logout({ commit }) {
+    logout({ commit }, payload = {}) {
+      const authGroup = payload.authGroup || "user";
       commit("RESET_STATE");
+      clearAuthFromStorage(authGroup);
     },
 
-    forceLogout({ commit }) {
+    forceLogout({ commit }, payload = {}) {
+      const authGroup = payload.authGroup || "user";
       commit("RESET_STATE");
+      clearAuthFromStorage(authGroup);
     },
 
     setDefaultAddress({ commit }, addressId) {

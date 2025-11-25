@@ -1,9 +1,9 @@
 <template>
   <v-app>
     <Navbar />
-    <v-main>
-      <router-view />
-    </v-main>
+<v-main class="main-with-nav">
+  <router-view />
+</v-main>
     <Footer />
   </v-app>
 </template>
@@ -19,13 +19,7 @@ export default {
 </script>
 
 <style scoped>
-.v-main {
-  min-height: auto !important;
-  height: auto !important;
-}
-@media (max-width: 1024px) {
-  :deep(main.v-main) {
-    padding-top: 0px !important;
-  }
+.main-with-nav {
+  padding-top: 112px;
 }
 </style>

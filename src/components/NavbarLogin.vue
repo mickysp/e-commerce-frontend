@@ -38,6 +38,7 @@ export default {
 .navbar-inner {
   max-width: 1440px;
   margin: 0 auto;
+  padding: 0 40px;
   box-sizing: border-box;
   width: 100%;
 }
@@ -46,8 +47,8 @@ export default {
   align-items: center;
 }
 .brand-logo {
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   border-radius: 8px;
   object-fit: contain;
 }
@@ -63,7 +64,6 @@ export default {
 .brand-click:hover {
   opacity: 0.8;
 }
-
 @media (max-width: 600px) {
   .kg-navbar {
     height: 56px !important;

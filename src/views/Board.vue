@@ -6,12 +6,23 @@
         <span class="my-4">กำลังโหลดข้อมูล</span>
       </div>
     </v-overlay>
+
+    <BoardBanner />
+    <BoardRecommend />
   </v-container>
 </template>
 
 <script>
+import BoardBanner from "@/components/Board/BoardBanner.vue";
+import BoardRecommend from "@/components/Board/BoardNew.vue";
+
 export default {
   name: "Board",
+
+  components: {
+    BoardBanner,
+    BoardRecommend,
+  },
 
   data() {
     return {
@@ -21,4 +32,8 @@ export default {
 };
 </script>
 
-<style></style>
+<style scoped>
+.v-container {
+  padding: 0 !important;
+}
+</style>

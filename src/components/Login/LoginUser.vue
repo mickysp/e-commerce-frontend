@@ -107,13 +107,20 @@ export default {
       );
     },
     isLoggedIn() {
-      return this.$store.getters.isAuthenticated;
+      const lsToken = localStorage.getItem("user_token");
+      return this.$store.getters.isAuthenticated || !!lsToken;
     },
   },
 
   created() {
     if (this.isLoggedIn) this.$router.replace({ name: "home" });
+
     this.email = this.$route?.query?.email || "";
+
+    const reason = this.$route?.query?.reason;
+    if (reason === "session_expired") {
+      swalAlert.Error("เซสชันหมดอายุแล้ว", "กรุณาเข้าสู่ระบบใหม่อีกครั้ง");
+    }
   },
 
   methods: {
@@ -150,8 +157,8 @@ export default {
       this.validateEmail();
       this.validatePassword();
       if (!this.canSubmit) return;
-
       if (this.submitting) return;
+
       this.submitting = true;
       this.$emit("loading", true);
 
@@ -161,13 +168,29 @@ export default {
           password: this.password,
         });
 
+        // แจ้ง store ตามเดิม
         await this.$store.dispatch("loginSuccess", {
           token,
           loginBy: "password",
           user,
         });
+
+        // ⭐ เก็บ token/role ฝั่ง user แยก key ไม่ชน admin/seller
+        const userRole = user?.role || "user";
+        localStorage.setItem("user_token", token);
+        localStorage.setItem("user_role", userRole);
+
         if (message) await swalAlert.Success(message);
-        this.$router.push({ name: "home" });
+
+        // รองรับ redirect ถ้ามี query ?redirect=
+        const redirect =
+          this.$route.query.redirect || this.$route.query.r || null;
+
+        if (redirect) {
+          this.$router.push(redirect);
+        } else {
+          this.$router.push({ name: "home" });
+        }
       } catch (err) {
         const msg =
           err?.response?.data?.message ||
@@ -184,10 +207,9 @@ export default {
 
 <style scoped>
 .login-page {
-  min-height: 80dvh;
+  min-height: 90dvh;
   display: grid;
   place-items: center;
-  padding: clamp(16px, 4vh, 40px) 16px;
 }
 .section-card {
   padding: 40px 24px;
