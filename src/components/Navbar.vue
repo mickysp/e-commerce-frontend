@@ -1,6 +1,14 @@
 <template>
   <div>
-    <v-app-bar app flat color="#FFFFFF" class="kg-navbar" fixed>
+    <v-app-bar
+      app
+      flat
+      color="#FFFFFF"
+      class="kg-navbar"
+      :elevation="0"
+      extended
+      extension-height="60"
+    >
       <div class="navbar-inner">
         <v-container class="px-6">
           <v-row
@@ -110,7 +118,6 @@
             </v-col>
           </v-row>
 
-          <!-- Mobile / Tablet bar -->
           <v-row
             v-else
             no-gutters
@@ -133,23 +140,18 @@
             </v-col>
 
             <v-col cols="auto" class="d-flex align-center justify-end">
-              <!-- search -->
               <v-btn icon class="mr-1">
                 <v-icon>mdi-magnify</v-icon>
               </v-btn>
 
-              <!-- cart -->
               <v-btn icon class="mr-1">
                 <v-icon>mdi-cart-outline</v-icon>
               </v-btn>
 
-              <!-- bell -->
               <v-btn icon class="mr-1">
                 <v-icon>mdi-bell-outline</v-icon>
               </v-btn>
 
-              <!-- profile (มือถือ) -->
-              <!-- ยังไม่ล็อกอิน: ไปหน้าเข้าสู่ระบบ -->
               <v-btn
                 v-if="!isLoggedIn"
                 icon
@@ -184,105 +186,103 @@
           </v-row>
         </v-container>
       </div>
+
+      <template v-slot:extension>
+        <div class="sub-navbar-inner desktop-only">
+          <v-container class="px-6">
+            <v-row justify="center" no-gutters class="menu-row">
+              <span
+                class="menu-item"
+                :class="{ active: $route.name === 'home' }"
+                @click="goHome"
+              >
+                หน้าแรก
+              </span>
+
+              <span
+                class="menu-item"
+                :class="{ active: $route.name === 'board' }"
+                @click="goBoard"
+              >
+                กระดานข่าว
+              </span>
+
+              <v-menu
+                offset-y
+                :nudge-bottom="10"
+                open-on-hover
+                :open-delay="80"
+                :close-delay="200"
+                transition="fade-transition"
+                content-class="menu-pop"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <span
+                    class="menu-item menu-dd-activator d-flex align-center"
+                    tabindex="0"
+                    v-bind="attrs"
+                    v-on="on"
+                  >
+                    ร้านค้า
+                    <v-icon small class="ml-1 menu-icon">
+                      mdi-chevron-down
+                    </v-icon>
+                  </span>
+                </template>
+
+                <v-list dense class="menu-dd">
+                  <v-list-item @click="$router.push({ name: 'register_seller' })">
+                    <v-list-item-title>เปิดร้านค้า</v-list-item-title>
+                  </v-list-item>
+                  <v-list-item @click="goSellerLogin">
+                    <v-list-item-title>เข้าสู่ระบบร้านค้า</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+
+              <span
+                class="menu-item"
+                :class="{ active: $route.name === 'delivery' }"
+                @click="goDelivery"
+              >
+                สินค้าเดลิเวอรี่
+              </span>
+
+              <v-menu
+                offset-y
+                :nudge-bottom="10"
+                open-on-hover
+                :open-delay="80"
+                :close-delay="200"
+                transition="fade-transition"
+                content-class="menu-pop"
+              >
+                <template v-slot:activator="{ on, attrs }">
+                  <span
+                    class="menu-item menu-dd-activator d-flex align-center"
+                    :class="{ active: $route.name === 'aboutus' }"
+                    tabindex="0"
+                    v-bind="attrs"
+                    v-on="on"
+                  >
+                    เกี่ยวกับเรา
+                    <v-icon small class="ml-1 menu-icon">
+                      mdi-chevron-down
+                    </v-icon>
+                  </span>
+                </template>
+
+                <v-list dense class="menu-dd">
+                  <v-list-item @click="goServices">
+                    <v-list-item-title>บริการของเรา</v-list-item-title>
+                  </v-list-item>
+                </v-list>
+              </v-menu>
+            </v-row>
+          </v-container>
+        </div>
+      </template>
     </v-app-bar>
-
-    <div class="sub-navbar desktop-only">
-      <div class="sub-navbar-inner">
-        <v-container class="px-6">
-          <v-row justify="center" no-gutters class="menu-row">
-            <span
-              class="menu-item"
-              :class="{ active: $route.name === 'home' }"
-              @click="goHome"
-            >
-              หน้าแรก
-            </span>
-
-            <span
-              class="menu-item"
-              :class="{ active: $route.name === 'board' }"
-              @click="goBoard"
-            >
-              กระดานข่าว
-            </span>
-
-            <v-menu
-              offset-y
-              :nudge-bottom="10"
-              open-on-hover
-              :open-delay="80"
-              :close-delay="200"
-              transition="fade-transition"
-              attach=".sub-navbar"
-              content-class="menu-pop"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="menu-item menu-dd-activator d-flex align-center"
-                  tabindex="0"
-                  v-bind="attrs"
-                  v-on="on"
-                >
-                  ร้านค้า
-                  <v-icon small class="ml-1 menu-icon">
-                    mdi-chevron-down
-                  </v-icon>
-                </span>
-              </template>
-
-              <v-list dense class="menu-dd">
-                <v-list-item @click="$router.push({ name: 'register_seller' })">
-                  <v-list-item-title>เปิดร้านค้า</v-list-item-title>
-                </v-list-item>
-                <v-list-item @click="goSellerLogin">
-                  <v-list-item-title>เข้าสู่ระบบร้านค้า</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-
-            <span
-              class="menu-item"
-              :class="{ active: $route.name === 'delivery' }"
-              @click="goDelivery"
-            >
-              สินค้าเดลิเวอรี่
-            </span>
-
-            <v-menu
-              offset-y
-              :nudge-bottom="10"
-              open-on-hover
-              :open-delay="80"
-              :close-delay="200"
-              transition="fade-transition"
-              attach=".sub-navbar"
-              content-class="menu-pop"
-            >
-              <template v-slot:activator="{ on, attrs }">
-                <span
-                  class="menu-item menu-dd-activator d-flex align-center"
-                  :class="{ active: $route.name === 'aboutus' }"
-                  tabindex="0"
-                  v-bind="attrs"
-                  v-on="on"
-                >
-                  เกี่ยวกับเรา
-                  <v-icon small class="ml-1 menu-icon">
-                    mdi-chevron-down
-                  </v-icon>
-                </span>
-              </template>
-
-              <v-list dense class="menu-dd">
-                <v-list-item @click="goServices">
-                  <v-list-item-title>บริการของเรา</v-list-item-title>
-                </v-list-item>
-              </v-list>
-            </v-menu>
-          </v-row>
-        </v-container>
-      </div>
-    </div>
 
     <!-- Mobile full-screen menu -->
     <v-expand-transition>
@@ -389,7 +389,6 @@ export default {
       }
     },
 
-    // ล็อก scroll ตอนเปิดเมนูมือถือ
     mobileMenu(val) {
       const body = document.body;
       const html = document.documentElement;
@@ -410,7 +409,6 @@ export default {
   },
 
   beforeDestroy() {
-    // กันกรณีออกจากหน้าไปแล้ว scroll ยัง lock อยู่
     const body = document.body;
     const html = document.documentElement;
     body.style.overflow = "";
@@ -514,15 +512,19 @@ export default {
 
 <style scoped>
 .kg-navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
   border-bottom: 1px solid #e5e7eb;
   z-index: 30;
 }
 ::v-deep .kg-navbar .v-toolbar__content {
   padding: 0 !important;
+  display: flex;
+  align-items: center;
+}
+::v-deep .kg-navbar .v-toolbar__extension {
+  padding: 0 !important;
+  border-top: 1px solid #e5e7eb;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
   display: flex;
   align-items: center;
 }
@@ -533,18 +535,6 @@ export default {
   padding: 0 40px;
   box-sizing: border-box;
   width: 100%;
-}
-.sub-navbar {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 64px;
-  z-index: 20;
-  background: #fff;
-  border-top: 1px solid #e5e7eb;
-  border-bottom: 1px solid #e5e7eb;
-  display: flex;
-  align-items: center;
 }
 .brand-logo {
   width: 42px;
@@ -563,6 +553,7 @@ export default {
 .brand-click:hover {
   opacity: 0.85;
 }
+
 .search-box {
   width: 100%;
   max-width: 640px;
@@ -598,6 +589,7 @@ export default {
   border-radius: 4px;
   width: 130px;
 }
+
 ::v-deep .v-avatar .v-icon {
   color: #111827;
   font-size: 28px;
@@ -607,6 +599,7 @@ export default {
   height: 100%;
   object-fit: cover;
 }
+
 ::v-deep .profile-menu-pop {
   z-index: 3000 !important;
 }
@@ -618,6 +611,8 @@ export default {
 .profile-menu-pop ::v-deep .v-list-item__icon {
   color: #cf2e18;
 }
+
+/* sub menu (desktop) */
 .menu-row {
   padding: 8px 0;
   gap: 34px;

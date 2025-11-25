@@ -112,8 +112,21 @@ export default {
   },
 
   created() {
+    // ถ้า login อยู่แล้ว ไม่ต้องมา login ซ้ำ
     if (this.isLoggedIn) this.$router.replace({ name: "home" });
+
+    // auto fill email (ถ้ามีส่งมา)
     this.email = this.$route?.query?.email || "";
+
+    // ==== แสดง popup ถ้ามาจาก session หมดอายุ ====
+    const reason = this.$route?.query?.reason;
+    if (reason === "session_expired") {
+      // ใช้ข้อความตามที่อยากแจ้ง user
+      swalAlert.Error(
+        "เซสชันหมดอายุแล้ว",
+        "กรุณาเข้าสู่ระบบใหม่อีกครั้ง"
+      );
+    }
   },
 
   methods: {
@@ -184,10 +197,9 @@ export default {
 
 <style scoped>
 .login-page {
-  min-height: 80dvh;
+  min-height: 90dvh;
   display: grid;
   place-items: center;
-  padding: clamp(16px, 4vh, 40px) 16px;
 }
 .section-card {
   padding: 40px 24px;

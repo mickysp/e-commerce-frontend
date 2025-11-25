@@ -36,7 +36,4 @@ export default {
 </script>
 
 <style scoped>
-.v-container {
-  padding: 0 !important;
-}
 </style>

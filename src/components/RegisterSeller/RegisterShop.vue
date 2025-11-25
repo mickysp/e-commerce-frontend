@@ -4,10 +4,13 @@
       <div class="icon-wrap">
         <v-icon size="96" color="#cf2e18">mdi-pencil-circle-outline</v-icon>
       </div>
+
       <h2 class="welcome-title">ยินดีต้อนรับผู้ใช้ใหม่</h2>
+
       <p class="subtitle">
         คุณสามารถเริ่มต้นการขายสินค้าใน EL-SON ได้โดยสร้างบัญชีผู้ขาย
       </p>
+
       <v-btn class="btn-primary" height="44" @click="$emit('start')">
         สร้างบัญชีผู้ขาย
       </v-btn>
@@ -18,11 +21,6 @@
 <script>
 export default {
   name: "RegisterShop",
-  methods: {
-    goCreateSeller() {
-      this.$router.push({ name: "sellerRegister" });
-    },
-  },
 };
 </script>
 
@@ -31,15 +29,20 @@ export default {
   display: flex;
   justify-content: center;
   align-items: center;
-  background: #fff;
-  padding: 170px 300px;
-  border-radius: 10px;
-  margin: 90px 0;
+  min-height: calc(100vh - 70px);
+  padding: 16px;
 }
 .welcome-card {
-  width: 600px;
-  max-width: 95%;
+  width: 100%;
+  max-width: 90%;
+  min-height: 70vh;
+  display: flex;               
+  flex-direction: column;      
+  justify-content: center;     
   text-align: center;
+  background: #fff;
+  border-radius: 10px;
+  padding: 60px 60px;
 }
 .icon-wrap {
   display: flex;
@@ -52,14 +55,12 @@ export default {
   font-weight: 700;
   color: #111827;
   margin-bottom: 12px;
-  font-family: "Noto Sans Thai", system-ui, Arial, sans-serif !important;
 }
 .subtitle {
   font-size: 16px;
   color: #4b5563;
   line-height: 1.6;
   margin-bottom: 28px;
-  font-family: "Noto Sans Thai", system-ui, sans-serif;
 }
 .btn-primary {
   background: #cf2e18 !important;
@@ -69,6 +70,14 @@ export default {
   text-transform: none;
   font-size: 16px;
   padding: 0px 26px !important;
-  letter-spacing: 0px;
+  width: auto !important;    
+  align-self: center;        
+}
+@media (max-width: 600px) {
+  .welcome-card {
+    width: 100%;
+    min-height: auto;
+    padding: 40px 20px;
+  }
 }
 </style>
