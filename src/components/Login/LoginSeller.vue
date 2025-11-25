@@ -1,5 +1,5 @@
 <template>
-  <v-container fluid class="pa-0 login-seller">
+<v-container fluid class="pa-0 login-seller d-flex justify-center align-center">
     <div class="form-container">
       <v-card class="section-card" elevation="0">
         <h2 class="form-title text-center mb-4">
@@ -102,8 +102,17 @@ export default {
 
   created() {
     const isAuth = this.$store.getters.isAuthenticated;
-    const role = (this.$store.getters.role || "").toLowerCase();
-    if (isAuth && role === "seller") {
+    const storeRole = (this.$store.getters.role || "").toLowerCase();
+
+    const sellerToken = localStorage.getItem("seller_token");
+    const sellerRole = (
+      localStorage.getItem("seller_role") || ""
+    ).toLowerCase();
+
+    const isSellerFromStore = isAuth && storeRole === "seller";
+    const isSellerFromLocal = !!sellerToken && sellerRole === "seller";
+
+    if (isSellerFromStore || isSellerFromLocal) {
       this.$router.replace({ name: "seller_dashboard" });
     }
   },
@@ -121,24 +130,38 @@ export default {
           password: this.form.password,
         });
 
+        const sellerRole = (seller.role || "seller").toLowerCase();
+
         await this.$store.dispatch("loginSuccess", {
           token,
           loginBy: "seller_password",
           user: {
             id: seller.id,
             email: seller.email,
-            role: "seller",
+            role: sellerRole,
             username: seller.shopName,
           },
         });
 
+        localStorage.setItem("seller_token", token);
+        localStorage.setItem("seller_role", sellerRole);
+
         if (message) await swalAlert.Success(message);
 
-        const target = this.$router.resolve({ name: "seller_dashboard" }).route
-          .name
-          ? { name: "seller_dashboard" }
-          : { name: "home" };
-        this.$router.push(target);
+        const redirect =
+          this.$route.query.redirect || this.$route.query.r || null;
+
+        if (redirect) {
+          this.$router.push(redirect);
+        } else {
+          const hasSellerDashboard = this.$router.resolve({
+            name: "seller_dashboard",
+          }).route.name;
+          const target = hasSellerDashboard
+            ? { name: "seller_dashboard" }
+            : { name: "home" };
+          this.$router.push(target);
+        }
       } catch (e) {
         const msg = e?.response?.data?.message || "เข้าสู่ระบบร้านค้าไม่สำเร็จ";
         await swalAlert.Error("เกิดข้อผิดพลาด", msg);
@@ -155,14 +178,11 @@ export default {
 </script>
 
 <style scoped>
-.login-seller {
-  padding-bottom: 80px;
-}
 .form-container {
   max-width: 640px;
   margin: 0 auto;
   width: 100%;
-  margin: 80px 0;
+  margin: 100px auto; 
 }
 .section-card {
   padding: 50px 24px;

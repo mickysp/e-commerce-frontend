@@ -43,7 +43,7 @@ const routes = [
         path: "profile_user",
         name: "profile_user",
         component: ProfileUser,
-        meta: { requiresAuth: true },
+        meta: { requiresAuth: true, authGroup: "user" }, // ใช้ user_token / token
       },
     ],
   },
@@ -57,6 +57,8 @@ const routes = [
         name: "login_seller",
         component: Login,
         alias: "/login/seller",
+        // ถ้ามีหน้า seller ที่ต้องล็อกอิน (เช่น /seller/dashboard)
+        // ให้ route นั้น ๆ ใส่ meta: { requiresAuth: true, authGroup: "seller" }
       },
       {
         path: "register",
@@ -93,7 +95,11 @@ const routes = [
     path: "/admin",
     component: DefaultAdmin,
     redirect: "/admin/dashboard",
-    meta: { requiresAuth: true, roles: ["admin", "superadmin"] },
+    meta: {
+      requiresAuth: true,
+      authGroup: "admin",
+      roles: ["admin", "superadmin"],
+    },
     children: [
       {
         path: "dashboard",
@@ -119,7 +125,57 @@ const router = new VueRouter({
 
 router.beforeEach((to, from, next) => {
   const store = router.app && router.app.$store;
-  const token = localStorage.getItem("token");
+
+  const authGroup =
+    to.matched.find((r) => r.meta && r.meta.authGroup)?.meta.authGroup ||
+    "user";
+
+  const TOKEN_KEYS = {
+    user: "user_token",
+    seller: "seller_token",
+    admin: "admin_token",
+  };
+
+  const ROLE_KEYS = {
+    user: "user_role",
+    seller: "seller_role",
+    admin: "admin_role",
+  };
+
+  const LOGIN_ROUTE = {
+    user: "login",
+    seller: "login_seller",
+    admin: "login_admin",
+  };
+
+  const tokenKey = TOKEN_KEYS[authGroup] || "user_token";
+  const roleKey = ROLE_KEYS[authGroup] || "user_role";
+  const loginRouteName = LOGIN_ROUTE[authGroup] || "login";
+
+  let token = localStorage.getItem(tokenKey);
+  let role = localStorage.getItem(roleKey);
+  let tokenSourceKey = token ? tokenKey : null;
+  let roleSourceKey = role ? roleKey : null;
+
+  if (!token && (authGroup === "user" || authGroup === "seller")) {
+    const legacyToken = localStorage.getItem("token");
+    if (legacyToken) {
+      token = legacyToken;
+      tokenSourceKey = "token";
+    }
+
+    if (!role) {
+      const legacyRole = localStorage.getItem("role");
+      if (legacyRole) {
+        role = legacyRole;
+        roleSourceKey = "role";
+      }
+    }
+  }
+
+  if (!role) {
+    role = "user";
+  }
 
   let isTokenExpired = false;
 
@@ -140,17 +196,28 @@ router.beforeEach((to, from, next) => {
   }
 
   if (token && isTokenExpired) {
-    store && store.dispatch("forceLogout");
-
-    try {
-      localStorage.clear();
-    } catch (e) {
-      console.error("Error clearing localStorage:", e);
+    if (store && store.dispatch) {
+      try {
+        store.dispatch("forceLogout", { authGroup });
+      } catch (e) {
+        store
+          .dispatch("forceLogout")
+          .catch(() => {});
+      }
     }
 
-    if (to.name !== "login") {
+    try {
+      if (tokenSourceKey) localStorage.removeItem(tokenSourceKey);
+      if (roleSourceKey) localStorage.removeItem(roleSourceKey);
+      localStorage.removeItem(tokenKey);
+      localStorage.removeItem(roleKey);
+    } catch (e) {
+      console.error("Error removing token:", e);
+    }
+
+    if (to.name !== loginRouteName) {
       return next({
-        name: "login",
+        name: loginRouteName,
         query: {
           reason: "session_expired",
         },
@@ -160,17 +227,34 @@ router.beforeEach((to, from, next) => {
     return next();
   }
 
-  const isLoggedIn =
-    store?.getters?.isAuthenticated || !!localStorage.getItem("token");
-  const role = store?.getters?.role || localStorage.getItem("role") || "user";
+  if (store && token && !isTokenExpired) {
+    try {
+      store.commit("SET_AUTH", {
+        access_token: token,
+        login_by: authGroup + "_token",
+      });
+    } catch (e) {
+      // ignore
+    }
+  } else if (store && !token) {
+    try {
+      store.commit("CLEAR_SESSION");
+    } catch (e) {
+      // ignore
+    }
+  }
 
+  const isLoggedIn = !!token;
   const requiresAuth = to.matched.some((r) => r.meta && r.meta.requiresAuth);
   const allowedRoles = to.matched
     .filter((r) => r.meta && r.meta.roles)
     .flatMap((r) => r.meta.roles);
 
   if (requiresAuth && !isLoggedIn) {
-    return next({ name: "login", query: { redirect: to.fullPath } });
+    return next({
+      name: loginRouteName,
+      query: { redirect: to.fullPath },
+    });
   }
 
   if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {

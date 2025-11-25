@@ -1,5 +1,5 @@
 <template>
-  <v-dialog v-model="dialogProxy" max-width="640" persistent>
+  <v-dialog v-model="dialogProxy" max-width="740" persistent>
     <v-card class="dialog-card" elevation="0">
       <v-card-title
         class="dialog-title d-flex justify-space-between align-center"

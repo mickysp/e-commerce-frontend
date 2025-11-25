@@ -231,7 +231,9 @@
                 </template>
 
                 <v-list dense class="menu-dd">
-                  <v-list-item @click="$router.push({ name: 'register_seller' })">
+                  <v-list-item
+                    @click="$router.push({ name: 'register_seller' })"
+                  >
                     <v-list-item-title>เปิดร้านค้า</v-list-item-title>
                   </v-list-item>
                   <v-list-item @click="goSellerLogin">
@@ -477,10 +479,12 @@ export default {
       try {
         await logoutApi().catch(() => {});
       } finally {
-        await this.$store.dispatch("logout");
+        await this.$store
+          .dispatch("logout", { authGroup: "user" })
+          .catch(() => {});
+
         this.user = null;
-        localStorage.removeItem("vuex");
-        localStorage.removeItem("token");
+
         this.safeGo({ name: "login" });
       }
     },

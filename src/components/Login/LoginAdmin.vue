@@ -92,17 +92,15 @@ export default {
         !this.submitting
       );
     },
-    isLoggedIn() {
-      return this.$store.getters.isAuthenticated;
-    },
-    role() {
-      return this.$store.getters.role || localStorage.getItem("role") || "user";
+    isAdminLoggedIn() {
+      const token = localStorage.getItem("admin_token");
+      const role = localStorage.getItem("admin_role");
+      return !!token && ["admin", "superadmin"].includes(role);
     },
   },
 
-  // ถ้า login อยู่แล้ว และเป็น admin/superadmin ให้เด้งเข้า dashboard ทันที
   created() {
-    if (this.isLoggedIn && ["admin", "superadmin"].includes(this.role)) {
+    if (this.isAdminLoggedIn) {
       this.$router.replace({ name: "admin_dashboard" });
     }
   },
@@ -138,8 +136,7 @@ export default {
     async onSubmit() {
       this.validateEmail();
       this.validatePassword();
-      if (!this.canSubmit) return;
-      if (this.submitting) return;
+      if (!this.canSubmit || this.submitting) return;
 
       this.submitting = true;
 
@@ -176,10 +173,19 @@ export default {
           user,
         });
 
+        localStorage.setItem("admin_token", token);
+        localStorage.setItem("admin_role", userRole);
+
         await swalAlert.Success("เข้าสู่ระบบสำเร็จ");
 
-        // ⬇️ หลัง login เสร็จ ให้เข้า Dashboard และเคลียร์ history หน้า login
-        this.$router.replace({ name: "admin_dashboard" });
+        const redirect =
+          this.$route.query.redirect || this.$route.query.r || null;
+
+        if (redirect) {
+          this.$router.replace(redirect);
+        } else {
+          this.$router.replace({ name: "admin_dashboard" });
+        }
       } catch (err) {
         const msg = "เข้าสู่ระบบไม่สำเร็จ กรุณาตรวจสอบข้อมูล";
         await swalAlert.Error("เข้าสู่ระบบไม่สำเร็จ", msg);

@@ -26,11 +26,10 @@ export default {
         console.error("Logout error:", e);
       } finally {
         if (this.$store && this.$store.dispatch) {
-          await this.$store.dispatch("logout").catch(() => {});
+          await this.$store
+            .dispatch("logout", { authGroup: "admin" })
+            .catch(() => {});
         }
-
-        localStorage.removeItem("vuex");
-        localStorage.removeItem("token");
 
         sessionStorage.clear();
 
