@@ -2,6 +2,8 @@ import Vue from "vue";
 import Vuex from "vuex";
 import createPersistedState from "vuex-persistedstate";
 
+import { connectUserSocket, disconnectUserSocket } from "@/plugins/socket";
+
 Vue.use(Vuex);
 
 function decodeJwt(token = "") {
@@ -202,13 +204,23 @@ export default new Vuex.Store({
   },
 
   actions: {
+    // เรียกจากหน้า login user
     loginSuccess({ commit }, { token, loginBy = "password", user }) {
       commit("SET_AUTH", { access_token: token, login_by: loginBy });
       commit("SET_USER", user);
+
+      // ⭐ ต่อ socket เฉพาะ user
+      const userId = user?.id || user?._id;
+      if (userId) {
+        connectUserSocket(userId);
+      }
     },
 
     loginSellerSuccess({ commit }, { token, seller }) {
-      commit("SET_AUTH", { access_token: token, login_by: "seller_password" });
+      commit("SET_AUTH", {
+        access_token: token,
+        login_by: "seller_password",
+      });
       commit("SET_SELLER", {
         sellerId: seller.id,
         shopName: seller.shopName,
@@ -219,12 +231,23 @@ export default new Vuex.Store({
 
     logout({ commit }, payload = {}) {
       const authGroup = payload.authGroup || "user";
+
+      // ⭐ disconnect socket เฉพาะ user
+      if (authGroup === "user") {
+        disconnectUserSocket();
+      }
+
       commit("RESET_STATE");
       clearAuthFromStorage(authGroup);
     },
 
     forceLogout({ commit }, payload = {}) {
       const authGroup = payload.authGroup || "user";
+
+      if (authGroup === "user") {
+        disconnectUserSocket();
+      }
+
       commit("RESET_STATE");
       clearAuthFromStorage(authGroup);
     },

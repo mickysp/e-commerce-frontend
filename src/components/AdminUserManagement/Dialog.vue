@@ -37,19 +37,35 @@
               md="4"
               class="d-flex flex-column align-start align-md-end"
             >
-              <div class="label-text mb-1">สถานะ</div>
+              <!-- สถานะบัญชี -->
+              <div class="label-text mb-1">สถานะบัญชี</div>
               <v-chip
                 small
-                :color="statusInfo.color"
-                :text-color="statusInfo.text"
+                :color="accountStatusInfo.color"
+                :text-color="accountStatusInfo.text"
                 class="status-chip mb-3"
               >
-                <v-icon v-if="statusInfo.icon" left size="20">
-                  {{ statusInfo.icon }}
+                <v-icon v-if="accountStatusInfo.icon" left size="20">
+                  {{ accountStatusInfo.icon }}
                 </v-icon>
-                {{ statusInfo.label }}
+                {{ accountStatusInfo.label }}
               </v-chip>
 
+              <!-- สถานะออนไลน์ -->
+              <div class="label-text mb-1">สถานะออนไลน์</div>
+              <v-chip
+                small
+                :color="onlineStatusInfo.color"
+                :text-color="onlineStatusInfo.text"
+                class="status-chip mb-3"
+              >
+                <v-icon v-if="onlineStatusInfo.icon" left size="20">
+                  {{ onlineStatusInfo.icon }}
+                </v-icon>
+                {{ onlineStatusInfo.label }}
+              </v-chip>
+
+              <!-- คะแนน / วอลเล็ต -->
               <div class="label-text mb-1">คะแนนสะสม</div>
               <div class="value-text mb-3">
                 {{ user.points != null ? user.points.toLocaleString() : "-" }}
@@ -82,9 +98,9 @@
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="label-text mb-1">เข้าสู่ระบบล่าสุด</div>
+              <div class="label-text mb-1">ออนไลน์ล่าสุด</div>
               <div class="value-text mb-3">
-                {{ formatDateTime(user.lastLoginAt) }}
+                {{ formatDateTime(user.lastSeenAt) }}
               </div>
 
               <div class="label-text mb-1">รหัสแนะนำของผู้ใช้</div>
@@ -150,7 +166,8 @@ export default {
       return parts.length ? parts.join(" ") : "-";
     },
 
-    statusInfo() {
+    // ⭐ ใช้ status = active / inactive / suspended
+    accountStatusInfo() {
       if (!this.user) {
         return {
           label: "-",
@@ -171,16 +188,59 @@ export default {
         };
       }
 
-      const lastLogin = this.user.lastLoginAt
-        ? new Date(this.user.lastLoginAt)
-        : null;
-      const ONLINE_MIN = 10;
-      const isOnline =
-        lastLogin && Date.now() - lastLogin.getTime() <= ONLINE_MIN * 60 * 1000;
+      if (status === "inactive") {
+        return {
+          label: "ยังไม่เปิดใช้งาน",
+          color: "#FEF3C7",
+          text: "#92400E",
+          icon: "mdi-clock-outline",
+        };
+      }
+
+      if (status === "active") {
+        return {
+          label: "บัญชีใช้งานได้",
+          color: "#E1FAE8",
+          text: "#0FAE63",
+          icon: "mdi-check-circle-outline",
+        };
+      }
+
+      return {
+        label: "ไม่ทราบสถานะ",
+        color: "#F3F4F6",
+        text: "#6B717F",
+        icon: "mdi-help-circle-outline",
+      };
+    },
+
+    // ⭐ ใช้ isOnline + lastSeenAt
+    onlineStatusInfo() {
+      if (!this.user) {
+        return {
+          label: "-",
+          color: "#F3F4F6",
+          text: "#6B717F",
+          icon: "",
+        };
+      }
+
+      const status = (this.user.status || "").toLowerCase();
+      const isOnline = !!this.user.isOnline;
+
+      // ถ้าถูกระงับบัญชี ให้ถือว่าออฟไลน์ไปเลย
+      if (status === "suspended") {
+        return {
+          label: "ออฟไลน์",
+          color: "#F3F4F6",
+          text: "#6B717F",
+          icon: "mdi-checkbox-blank-circle-outline",
+        };
+      }
 
       if (isOnline) {
         return {
-          label: "ผู้ใช้ออนไลน์",
+          label: "ออนไลน์",
           color: "#E1FAE8",
           text: "#0FAE63",
           icon: "mdi-checkbox-blank-circle",
@@ -188,7 +248,7 @@ export default {
       }
 
       return {
-        label: "ผู้ใช้ออฟไลน์",
+        label: "ออฟไลน์",
         color: "#F3F4F6",
         text: "#6B717F",
         icon: "mdi-checkbox-blank-circle-outline",
@@ -216,6 +276,7 @@ export default {
   methods: {
     formatDate(d) {
       if (!d) return "-";
+
       const date = new Date(d);
       if (isNaN(date.getTime())) return "-";
 
@@ -243,6 +304,7 @@ export default {
 
     formatDateTime(d) {
       if (!d) return "-";
+
       const date = new Date(d);
       if (isNaN(date.getTime())) return "-";
 

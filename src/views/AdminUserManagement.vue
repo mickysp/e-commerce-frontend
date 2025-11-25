@@ -73,8 +73,10 @@
                 <UserSelect
                   :search="search"
                   :selected-status="selectedStatus"
+                  :selected-online-status="selectedOnlineStatus"  
                   @update:search="search = $event"
                   @update:selected-status="selectedStatus = $event"
+                  @update:selected-online-status="selectedOnlineStatus = $event" 
                   @update:date-range="dateRange = $event"
                 />
               </v-col>
@@ -149,7 +151,8 @@ export default {
       selectedCardIndex: 0,
       isLoading: false,
       search: "",
-      selectedStatus: "all",
+      selectedStatus: "all",          
+      selectedOnlineStatus: "all",    
       dateRange: [],
       dialogVisible: false,
       selectedUser: null,
@@ -167,6 +170,7 @@ export default {
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
       const norm = (t) => (t || "").toString().trim().toLowerCase();
+
       const normalizeStatus = (status) => {
         const v = norm(status);
         if (v === "active") return "active";
@@ -198,19 +202,16 @@ export default {
       }
 
       if (this.selectedStatus && this.selectedStatus !== "all") {
-        if (this.selectedStatus === "active") {
-          result = result.filter((u) => normalizeStatus(u.status) === "active");
-        } else if (this.selectedStatus === "inactive") {
-          result = result.filter((u) => {
-            if (!u.createdAt) return false;
-            const ts = new Date(u.createdAt).getTime();
-            return ts >= sevenDaysAgo;
-          });
-        } else if (this.selectedStatus === "suspended") {
-          result = result.filter(
-            (u) => normalizeStatus(u.status) === "suspended"
-          );
-        }
+        const target = this.selectedStatus;
+        result = result.filter(
+          (u) => normalizeStatus(u.status) === target
+        );
+      }
+
+      if (this.selectedOnlineStatus === "online") {
+        result = result.filter((u) => !!u.isOnline);
+      } else if (this.selectedOnlineStatus === "offline") {
+        result = result.filter((u) => !u.isOnline);
       }
 
       if ((this.search || "").trim()) {
@@ -279,9 +280,9 @@ export default {
 
     getCardByIndex(index) {
       const baseCards = [
-        { key: "all" },
-        { key: "active" },
-        { key: "new_7d" },
+        { key: "all" },      
+        { key: "active" },   
+        { key: "new_7d" },   
         { key: "inactive" },
       ];
       return baseCards[index] || null;

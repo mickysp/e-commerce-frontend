@@ -55,7 +55,7 @@ export default {
         },
         {
           key: "active",
-          title: "กำลังใช้งาน",
+          title: "บัญชีใช้งานได้",
           icon: "mdi-account-check-outline",
           color: "#3B82F6",
         },
@@ -67,7 +67,7 @@ export default {
         },
         {
           key: "inactive",
-          title: "ไม่ได้ใช้งาน / ถูกระงับ",
+          title: "บัญชีถูกระงับ",
           icon: "mdi-account-off-outline",
           color: "#10B981",
         },

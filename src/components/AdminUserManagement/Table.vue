@@ -305,7 +305,6 @@ export default {
 
       return `${day} ${month} ${year}`;
     },
-
     getStatus(user) {
       const status = (user.status || "").toLowerCase();
 
@@ -318,13 +317,7 @@ export default {
         };
       }
 
-      const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
-      const ONLINE_MIN = 10;
-
-      const isOnline =
-        lastLogin && Date.now() - lastLogin.getTime() <= ONLINE_MIN * 60 * 1000;
-
-      if (isOnline) {
+      if (user.isOnline) {
         return {
           label: "ผู้ใช้ออนไลน์",
           color: "#E1FAE8",
