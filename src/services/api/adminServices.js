@@ -5,7 +5,9 @@ export const getAdminUsersApi = async () => {
   return res.data;
 };
 
-export const getAdminUserByIdApi = async (userId) => {
-  const res = await api.get(`/api/v1/admin/users/${userId}`);
+export const updateAdminUserStatusApi = async (userId, status) => {
+  const res = await api.put(`/api/v1/admin/users/${userId}/status`, {
+    status,
+  });
   return res.data;
 };

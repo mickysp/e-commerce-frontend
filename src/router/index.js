@@ -22,6 +22,7 @@ import RegisterSeller from "@/views/RegisterSeller.vue";
 import LoginAdmin from "@/components/Login/LoginAdmin.vue";
 import AdminDashboard from "@/views/AdminDashboard.vue";
 import AdminUserManagement from "@/views/AdminUserManagement.vue";
+import AdminProfile from "@/views/AdminProfile.vue";
 
 Vue.use(VueRouter);
 
@@ -110,6 +111,11 @@ const routes = [
         path: "users",
         name: "admin_users",
         component: AdminUserManagement,
+      },
+      {
+        path: "profile",
+        name: "admin_profile",
+        component: AdminProfile,
       },
     ],
   },
@@ -200,9 +206,7 @@ router.beforeEach((to, from, next) => {
       try {
         store.dispatch("forceLogout", { authGroup });
       } catch (e) {
-        store
-          .dispatch("forceLogout")
-          .catch(() => {});
+        store.dispatch("forceLogout").catch(() => {});
       }
     }
 

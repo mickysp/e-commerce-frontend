@@ -29,9 +29,7 @@
                     height="103"
                   />
                 </v-img>
-                <span class="no-data-text mb-4">
-                  ยังไม่มีรายการผู้ใช้
-                </span>
+                <span class="no-data-text mb-4"> ยังไม่มีรายการผู้ใช้ </span>
               </div>
             </v-col>
           </v-row>
@@ -73,10 +71,10 @@
                 <UserSelect
                   :search="search"
                   :selected-status="selectedStatus"
-                  :selected-online-status="selectedOnlineStatus"  
+                  :selected-online-status="selectedOnlineStatus"
                   @update:search="search = $event"
                   @update:selected-status="selectedStatus = $event"
-                  @update:selected-online-status="selectedOnlineStatus = $event" 
+                  @update:selected-online-status="selectedOnlineStatus = $event"
                   @update:date-range="dateRange = $event"
                 />
               </v-col>
@@ -91,9 +89,10 @@
                 <template v-if="filteredUsers.length > 0">
                   <UserTable
                     :users="filteredUsers"
-                    :user-role="$store.getters.getRole"
+                    :user-role="normalizedRole"
                     @view="openDetail"
                     @delete="deleteUser"
+                    @toggle-suspend="toggleSuspend"
                   />
                 </template>
 
@@ -123,10 +122,7 @@
               </v-col>
             </v-row>
 
-            <UserDialog
-              v-model="dialogVisible"
-              :user="selectedUser"
-            />
+            <UserDialog v-model="dialogVisible" :user="selectedUser" />
           </v-card-text>
         </v-card>
       </template>
@@ -139,7 +135,11 @@ import UserStatsCards from "@/components/AdminUserManagement/Card.vue";
 import UserTable from "@/components/AdminUserManagement/Table.vue";
 import UserSelect from "@/components/AdminUserManagement/Select.vue";
 import UserDialog from "@/components/AdminUserManagement/Dialog.vue";
-import { getAdminUsersApi } from "@/services/api/adminServices";
+import {
+  getAdminUsersApi,
+  updateAdminUserStatusApi,
+} from "@/services/api/adminServices";
+import swalAlert from "@/services/alert/swalServices";
 
 export default {
   name: "AdminUserManagement",
@@ -151,8 +151,8 @@ export default {
       selectedCardIndex: 0,
       isLoading: false,
       search: "",
-      selectedStatus: "all",          
-      selectedOnlineStatus: "all",    
+      selectedStatus: "all",
+      selectedOnlineStatus: "all",
       dateRange: [],
       dialogVisible: false,
       selectedUser: null,
@@ -164,6 +164,14 @@ export default {
   },
 
   computed: {
+    normalizedRole() {
+      const raw = (this.$store.getters.role || "")
+        .toString()
+        .trim()
+        .toLowerCase();
+      return raw;
+    },
+
     filteredUsers() {
       const card = this.getCardByIndex(this.selectedCardIndex);
       const now = Date.now();
@@ -203,9 +211,7 @@ export default {
 
       if (this.selectedStatus && this.selectedStatus !== "all") {
         const target = this.selectedStatus;
-        result = result.filter(
-          (u) => normalizeStatus(u.status) === target
-        );
+        result = result.filter((u) => normalizeStatus(u.status) === target);
       }
 
       if (this.selectedOnlineStatus === "online") {
@@ -218,12 +224,7 @@ export default {
         const kw = this.search.toLowerCase().trim();
 
         result = result.filter((u) => {
-          const fullName = [
-            u.prefix,
-            u.firstName,
-            u.middleName,
-            u.lastName,
-          ]
+          const fullName = [u.prefix, u.firstName, u.middleName, u.lastName]
             .map((x) => (x || "").trim())
             .filter(Boolean)
             .join(" ")
@@ -233,9 +234,7 @@ export default {
           const email = (u.email || "").toLowerCase();
 
           return (
-            fullName.includes(kw) ||
-            username.includes(kw) ||
-            email.includes(kw)
+            fullName.includes(kw) || username.includes(kw) || email.includes(kw)
           );
         });
       }
@@ -280,9 +279,9 @@ export default {
 
     getCardByIndex(index) {
       const baseCards = [
-        { key: "all" },      
-        { key: "active" },   
-        { key: "new_7d" },   
+        { key: "all" },
+        { key: "active" },
+        { key: "new_7d" },
         { key: "inactive" },
       ];
       return baseCards[index] || null;
@@ -295,6 +294,53 @@ export default {
 
     deleteUser(user) {
       console.log("delete user", user);
+    },
+
+    // เรียกตอนกดปุ่มระงับ/ยกเลิกระงับใน Table
+    async toggleSuspend(user) {
+      const me = this.$store?.state?.user?._id || "";
+      if (me && user._id === me) {
+        await swalAlert.Warning(
+          "ไม่สามารถระงับบัญชีตัวเองได้",
+          "คุณไม่สามารถระงับบัญชีของตัวเองได้"
+        );
+        return;
+      }
+
+      const isSuspended =
+        (user.status || "").toString().trim().toLowerCase() === "suspended";
+
+      const { isConfirmed } = await swalAlert.Confirm({
+        title: isSuspended
+          ? "ยืนยันการยกเลิกระงับบัญชี"
+          : "ยืนยันการระงับบัญชี",
+        message: `คุณต้องการ${
+          isSuspended ? "เปิดการใช้งานบัญชีของ" : "ระงับบัญชีของ"
+        } ${user.firstName || user.username || "-"} ใช่หรือไม่?`,
+        icon: "warning",
+      });
+
+      if (!isConfirmed) return;
+
+      try {
+        const nextStatus = isSuspended ? "active" : "suspended";
+        const res = await updateAdminUserStatusApi(user._id, nextStatus);
+
+        this.users = this.users.map((u) =>
+          u._id === user._id
+            ? { ...u, status: res.user.status, isOnline: res.user.isOnline }
+            : u
+        );
+
+        await swalAlert.Success(res.message || "อัปเดตสถานะสำเร็จ");
+      } catch (err) {
+        await swalAlert.Error(
+          "เกิดข้อผิดพลาด",
+          err?.response?.data?.message ||
+            err?.message ||
+            "ไม่สามารถอัปเดตสถานะผู้ใช้ได้"
+        );
+      }
     },
   },
 };
