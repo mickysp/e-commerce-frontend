@@ -22,6 +22,12 @@ import RegisterSeller from "@/views/RegisterSeller.vue";
 import LoginAdmin from "@/components/Login/LoginAdmin.vue";
 import AdminDashboard from "@/views/AdminDashboard.vue";
 import AdminUserManagement from "@/views/AdminUserManagement.vue";
+import AdminOrderManagement from "@/views/AdminOrderManagement.vue";
+import AdminSellerManagement from "@/views/AdminSellerManagement.vue";
+import AdminBoard from "@/views/AdminBoard.vue";
+import AdminCategory from "@/views/AdminCategory.vue";
+import AdminProduct from "@/views/AdminProduct.vue";
+import AdminManagement from "@/views/AdminManagement.vue";
 import AdminProfile from "@/views/AdminProfile.vue";
 
 Vue.use(VueRouter);
@@ -44,7 +50,7 @@ const routes = [
         path: "profile_user",
         name: "profile_user",
         component: ProfileUser,
-        meta: { requiresAuth: true, authGroup: "user" }, // ใช้ user_token / token
+        meta: { requiresAuth: true, authGroup: "user" },
       },
     ],
   },
@@ -58,8 +64,6 @@ const routes = [
         name: "login_seller",
         component: Login,
         alias: "/login/seller",
-        // ถ้ามีหน้า seller ที่ต้องล็อกอิน (เช่น /seller/dashboard)
-        // ให้ route นั้น ๆ ใส่ meta: { requiresAuth: true, authGroup: "seller" }
       },
       {
         path: "register",
@@ -111,6 +115,36 @@ const routes = [
         path: "users",
         name: "admin_users",
         component: AdminUserManagement,
+      },
+      {
+        path: "orders",
+        name: "admin_orders",
+        component: AdminOrderManagement,
+      },
+      {
+        path: "sellers",
+        name: "admin_sellers",
+        component: AdminSellerManagement,
+      },
+      {
+        path: "boards",
+        name: "admin_boards",
+        component: AdminBoard,
+      },
+      {
+        path: "categories",
+        name: "admin_category",
+        component: AdminCategory,
+      },
+      {
+        path: "products",
+        name: "admin_product",
+        component: AdminProduct,
+      },
+      {
+        path: "admins",
+        name: "admin_admins",
+        component: AdminManagement,
       },
       {
         path: "profile",
