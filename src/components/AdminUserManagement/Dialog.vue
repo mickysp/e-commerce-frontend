@@ -25,6 +25,11 @@
               <div class="label-text mb-1">ชื่อ-นามสกุล</div>
               <div class="value-text mb-3">{{ fullName }}</div>
 
+              <div class="label-text mb-1">เพศ</div>
+              <div class="value-text mb-3">
+                {{ user.gender || "-" }}
+              </div>
+
               <div class="label-text mb-1">ชื่อผู้ใช้</div>
               <div class="value-text mb-3">{{ user.username || "-" }}</div>
 
@@ -37,7 +42,6 @@
               md="4"
               class="d-flex flex-column align-start align-md-end"
             >
-              <!-- สถานะบัญชี -->
               <div class="label-text mb-1">สถานะบัญชี</div>
               <v-chip
                 small
@@ -51,7 +55,6 @@
                 {{ accountStatusInfo.label }}
               </v-chip>
 
-              <!-- สถานะออนไลน์ -->
               <div class="label-text mb-1">สถานะออนไลน์</div>
               <v-chip
                 small
@@ -65,7 +68,6 @@
                 {{ onlineStatusInfo.label }}
               </v-chip>
 
-              <!-- คะแนน / วอลเล็ต -->
               <div class="label-text mb-1">คะแนนสะสม</div>
               <div class="value-text mb-3">
                 {{ user.points != null ? user.points.toLocaleString() : "-" }}
@@ -88,7 +90,10 @@
             <v-col cols="12" md="6">
               <div class="label-text mb-1">วันเกิด</div>
               <div class="value-text mb-3">
-                {{ formatDate(user.birthDate) }}
+                <span>{{ formatDate(user.birthDate) }}</span>
+                <span v-if="user.birthDate && calcAge(user.birthDate) !== '-'">
+                  (อายุ {{ calcAge(user.birthDate) }} ปี)
+                </span>
               </div>
 
               <div class="label-text mb-1">วันที่ลงทะเบียน</div>
@@ -166,7 +171,6 @@ export default {
       return parts.length ? parts.join(" ") : "-";
     },
 
-    // ⭐ ใช้ status = active / inactive / suspended
     accountStatusInfo() {
       if (!this.user) {
         return {
@@ -214,7 +218,6 @@ export default {
       };
     },
 
-    // ⭐ ใช้ isOnline + lastSeenAt
     onlineStatusInfo() {
       if (!this.user) {
         return {
@@ -228,7 +231,6 @@ export default {
       const status = (this.user.status || "").toLowerCase();
       const isOnline = !!this.user.isOnline;
 
-      // ถ้าถูกระงับบัญชี ให้ถือว่าออฟไลน์ไปเลย
       if (status === "suspended") {
         return {
           label: "ออฟไลน์",
@@ -300,6 +302,24 @@ export default {
       const year = date.getFullYear() + 543;
 
       return `${day} ${month} ${year}`;
+    },
+
+    calcAge(d) {
+      if (!d) return "-";
+
+      const birth = new Date(d);
+      if (isNaN(birth.getTime())) return "-";
+
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+
+      if (age < 0 || age > 120) return "-";
+      return age;
     },
 
     formatDateTime(d) {

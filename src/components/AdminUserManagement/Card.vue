@@ -63,13 +63,13 @@ export default {
           key: "new_7d",
           title: "ช่วง 7 วันที่ผ่านมา",
           icon: "mdi-text-box-plus-outline",
-          color: "#F97316",
+          color: "#10B981",
         },
         {
           key: "inactive",
           title: "บัญชีถูกระงับ",
           icon: "mdi-account-off-outline",
-          color: "#10B981",
+          color: "#F97316",
         },
       ],
     };
@@ -138,10 +138,10 @@ export default {
         return { background: "#E6F1FF", border: "1px solid #3D78C8" };
       }
       if (card.key === "new_7d") {
-        return { background: "#FFF7EB", border: "1px solid #FFB121" };
+        return { background: "#E6FFF2", border: "1px solid #10B85D" };
       }
       if (card.key === "inactive") {
-        return { background: "#E6FFF2", border: "1px solid #10B85D" };
+        return { background: "#FFF7EB", border: "1px solid #FFB121" };
       }
       return {};
     },

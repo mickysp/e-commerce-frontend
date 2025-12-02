@@ -79,6 +79,45 @@
                 />
               </v-col>
 
+              <v-col cols="12" class="d-flex flex-wrap align-center mb-1">
+                <span class="age-summary-label mr-2 mb-1">
+                  อายุเฉลี่ยของผู้ใช้ในระบบ (จากผลการกรองปัจจุบัน)
+                  <span v-if="averageAgeInfo && averageAgeInfo.avg">
+                    • {{ averageAgeInfo.avg }} ปี
+                  </span>
+                </span>
+
+                <template
+                  v-if="
+                    averageAgeInfo &&
+                    averageAgeInfo.buckets &&
+                    averageAgeInfo.buckets.length
+                  "
+                >
+                  <v-chip
+                    v-for="bucket in averageAgeInfo.buckets"
+                    :key="bucket.key"
+                    small
+                    :color="bucket.color"
+                    :text-color="bucket.text"
+                    class="age-summary-chip mr-2 mb-1"
+                  >
+                    <v-icon left small v-if="bucket.icon">
+                      {{ bucket.icon }}
+                    </v-icon>
+                    <!-- ตัวอย่าง: 25–34 ปี (วัยเริ่มทำงาน) • 48% (120 คน) -->
+                    {{ bucket.label }} • {{ bucket.percent }}% ({{ bucket.count }} คน)
+                  </v-chip>
+                </template>
+
+                <span
+                  v-else
+                  class="no-age-text mb-1"
+                >
+                  - ไม่มีข้อมูลวันเกิด -
+                </span>
+              </v-col>
+
               <v-col cols="12">
                 <span class="count-data-text">
                   ผู้ใช้ ทั้งหมด {{ filteredUsers.length }} คน
@@ -257,6 +296,119 @@ export default {
 
       return result;
     },
+
+    averageAgeInfo() {
+      const today = new Date();
+
+      const ages = this.filteredUsers
+        .map((u) => {
+          if (!u.birthDate) return null;
+          const d = new Date(u.birthDate);
+          if (isNaN(d.getTime())) return null;
+
+          let age = today.getFullYear() - d.getFullYear();
+          const m = today.getMonth() - d.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+            age--;
+          }
+          return age >= 0 ? age : null;
+        })
+        .filter((a) => a != null);
+
+      const total = ages.length;
+      if (!total) return null;
+
+      const sum = ages.reduce((s, a) => s + a, 0);
+      const avg = Math.round(sum / total);
+
+      const baseBuckets = [
+        {
+          key: "under_18",
+          label: "ต่ำกว่า 18 ปี",
+          min: 0,
+          max: 17,
+          color: "#FEF3C7",
+          text: "#92400E",
+          icon: "mdi-alert-circle-outline",
+        },
+        {
+          key: "18_24",
+          label: "18–24 ปี (วัยเรียน / วัยมหาวิทยาลัย)",
+          min: 18,
+          max: 24,
+          color: "#DBEAFE",
+          text: "#1D4ED8",
+          icon: "mdi-school",
+        },
+        {
+          key: "25_34",
+          label: "25–34 ปี (วัยเริ่มทำงาน)",
+          min: 25,
+          max: 34,
+          color: "#E1FAE8",
+          text: "#0FAE63",
+          icon: "mdi-briefcase",
+        },
+        {
+          key: "35_44",
+          label: "35–44 ปี (วัยทำงานเต็มที่)",
+          min: 35,
+          max: 44,
+          color: "#DCFCE7",
+          text: "#15803D",
+          icon: "mdi-briefcase",
+        },
+        {
+          key: "45_59",
+          label: "45–59 ปี (วัยก่อนเกษียณ)",
+          min: 45,
+          max: 59,
+          color: "#E5E7EB",
+          text: "#374151",
+          icon: "mdi-account-clock-outline",
+        },
+        {
+          key: "60_plus",
+          label: "60 ปีขึ้นไป (ผู้สูงอายุ)",
+          min: 60,
+          max: Infinity,
+          color: "#FCE7F3",
+          text: "#9D174D",
+          icon: "mdi-human-cane",
+        },
+      ];
+
+      const bucketStats = baseBuckets.map((b) => ({
+        ...b,
+        count: 0,
+      }));
+
+      // แจกอายุลงแต่ละช่วง
+      for (const age of ages) {
+        const bucket = bucketStats.find((b) => age >= b.min && age <= b.max);
+        if (!bucket) continue;
+        bucket.count += 1;
+      }
+
+      const buckets = bucketStats
+        .filter((b) => b.count > 0)
+        .map((b) => ({
+          key: b.key,
+          label: b.label,
+          color: b.color,
+          text: b.text,
+          icon: b.icon,
+          count: b.count,
+          percent: Math.round((b.count / total) * 100),
+        }))
+        .sort((a, b) => b.percent - a.percent);
+
+      return {
+        avg,
+        total,
+        buckets,
+      };
+    },
   },
 
   methods: {
@@ -264,7 +416,7 @@ export default {
       this.isLoading = true;
       try {
         const data = await getAdminUsersApi();
-        this.users = data.users || [];
+        this.users = (data && data.users) || [];
       } catch (err) {
         console.error("[AdminUserManagement] loadUsers error:", err);
         this.users = [];
@@ -296,7 +448,6 @@ export default {
       console.log("delete user", user);
     },
 
-    // เรียกตอนกดปุ่มระงับ/ยกเลิกระงับใน Table
     async toggleSuspend(user) {
       const me = this.$store?.state?.user?._id || "";
       if (me && user._id === me) {
@@ -365,5 +516,22 @@ export default {
   font-size: 14px;
   font-weight: 400;
   color: #6b717f;
+}
+.age-summary-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b717f;
+}
+.age-summary-chip {
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.no-age-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
 }
 </style>
