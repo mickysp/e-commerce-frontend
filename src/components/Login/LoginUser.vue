@@ -168,21 +168,23 @@ export default {
           password: this.password,
         });
 
-        // แจ้ง store ตามเดิม
         await this.$store.dispatch("loginSuccess", {
           token,
           loginBy: "password",
           user,
         });
 
-        // ⭐ เก็บ token/role ฝั่ง user แยก key ไม่ชน admin/seller
         const userRole = user?.role || "user";
         localStorage.setItem("user_token", token);
         localStorage.setItem("user_role", userRole);
 
+        if (this.$socket && user && (user.id || user._id)) {
+          const userId = user.id || user._id;
+          this.$socket.emit("buyer:join", userId);
+        }
+
         if (message) await swalAlert.Success(message);
 
-        // รองรับ redirect ถ้ามี query ?redirect=
         const redirect =
           this.$route.query.redirect || this.$route.query.r || null;
 

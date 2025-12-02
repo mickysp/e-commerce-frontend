@@ -25,6 +25,11 @@
               <div class="label-text mb-1">ชื่อ-นามสกุล</div>
               <div class="value-text mb-3">{{ fullName }}</div>
 
+              <div class="label-text mb-1">เพศ</div>
+              <div class="value-text mb-3">
+                {{ user.gender || "-" }}
+              </div>
+
               <div class="label-text mb-1">ชื่อผู้ใช้</div>
               <div class="value-text mb-3">{{ user.username || "-" }}</div>
 
@@ -37,17 +42,30 @@
               md="4"
               class="d-flex flex-column align-start align-md-end"
             >
-              <div class="label-text mb-1">สถานะ</div>
+              <div class="label-text mb-1">สถานะบัญชี</div>
               <v-chip
                 small
-                :color="statusInfo.color"
-                :text-color="statusInfo.text"
+                :color="accountStatusInfo.color"
+                :text-color="accountStatusInfo.text"
                 class="status-chip mb-3"
               >
-                <v-icon v-if="statusInfo.icon" left size="20">
-                  {{ statusInfo.icon }}
+                <v-icon v-if="accountStatusInfo.icon" left size="20">
+                  {{ accountStatusInfo.icon }}
                 </v-icon>
-                {{ statusInfo.label }}
+                {{ accountStatusInfo.label }}
+              </v-chip>
+
+              <div class="label-text mb-1">สถานะออนไลน์</div>
+              <v-chip
+                small
+                :color="onlineStatusInfo.color"
+                :text-color="onlineStatusInfo.text"
+                class="status-chip mb-3"
+              >
+                <v-icon v-if="onlineStatusInfo.icon" left size="20">
+                  {{ onlineStatusInfo.icon }}
+                </v-icon>
+                {{ onlineStatusInfo.label }}
               </v-chip>
 
               <div class="label-text mb-1">คะแนนสะสม</div>
@@ -72,7 +90,10 @@
             <v-col cols="12" md="6">
               <div class="label-text mb-1">วันเกิด</div>
               <div class="value-text mb-3">
-                {{ formatDate(user.birthDate) }}
+                <span>{{ formatDate(user.birthDate) }}</span>
+                <span v-if="user.birthDate && calcAge(user.birthDate) !== '-'">
+                  (อายุ {{ calcAge(user.birthDate) }} ปี)
+                </span>
               </div>
 
               <div class="label-text mb-1">วันที่ลงทะเบียน</div>
@@ -82,9 +103,9 @@
             </v-col>
 
             <v-col cols="12" md="6">
-              <div class="label-text mb-1">เข้าสู่ระบบล่าสุด</div>
+              <div class="label-text mb-1">ออนไลน์ล่าสุด</div>
               <div class="value-text mb-3">
-                {{ formatDateTime(user.lastLoginAt) }}
+                {{ formatDateTime(user.lastSeenAt) }}
               </div>
 
               <div class="label-text mb-1">รหัสแนะนำของผู้ใช้</div>
@@ -150,7 +171,7 @@ export default {
       return parts.length ? parts.join(" ") : "-";
     },
 
-    statusInfo() {
+    accountStatusInfo() {
       if (!this.user) {
         return {
           label: "-",
@@ -171,16 +192,57 @@ export default {
         };
       }
 
-      const lastLogin = this.user.lastLoginAt
-        ? new Date(this.user.lastLoginAt)
-        : null;
-      const ONLINE_MIN = 10;
-      const isOnline =
-        lastLogin && Date.now() - lastLogin.getTime() <= ONLINE_MIN * 60 * 1000;
+      if (status === "inactive") {
+        return {
+          label: "ยังไม่เปิดใช้งาน",
+          color: "#FEF3C7",
+          text: "#92400E",
+          icon: "mdi-clock-outline",
+        };
+      }
+
+      if (status === "active") {
+        return {
+          label: "บัญชีใช้งานได้",
+          color: "#E1FAE8",
+          text: "#0FAE63",
+          icon: "mdi-check-circle-outline",
+        };
+      }
+
+      return {
+        label: "ไม่ทราบสถานะ",
+        color: "#F3F4F6",
+        text: "#6B717F",
+        icon: "mdi-help-circle-outline",
+      };
+    },
+
+    onlineStatusInfo() {
+      if (!this.user) {
+        return {
+          label: "-",
+          color: "#F3F4F6",
+          text: "#6B717F",
+          icon: "",
+        };
+      }
+
+      const status = (this.user.status || "").toLowerCase();
+      const isOnline = !!this.user.isOnline;
+
+      if (status === "suspended") {
+        return {
+          label: "ออฟไลน์",
+          color: "#F3F4F6",
+          text: "#6B717F",
+          icon: "mdi-checkbox-blank-circle-outline",
+        };
+      }
 
       if (isOnline) {
         return {
-          label: "ผู้ใช้ออนไลน์",
+          label: "ออนไลน์",
           color: "#E1FAE8",
           text: "#0FAE63",
           icon: "mdi-checkbox-blank-circle",
@@ -188,7 +250,7 @@ export default {
       }
 
       return {
-        label: "ผู้ใช้ออฟไลน์",
+        label: "ออฟไลน์",
         color: "#F3F4F6",
         text: "#6B717F",
         icon: "mdi-checkbox-blank-circle-outline",
@@ -216,6 +278,7 @@ export default {
   methods: {
     formatDate(d) {
       if (!d) return "-";
+
       const date = new Date(d);
       if (isNaN(date.getTime())) return "-";
 
@@ -241,8 +304,27 @@ export default {
       return `${day} ${month} ${year}`;
     },
 
+    calcAge(d) {
+      if (!d) return "-";
+
+      const birth = new Date(d);
+      if (isNaN(birth.getTime())) return "-";
+
+      const today = new Date();
+      let age = today.getFullYear() - birth.getFullYear();
+      const m = today.getMonth() - birth.getMonth();
+
+      if (m < 0 || (m === 0 && today.getDate() < birth.getDate())) {
+        age--;
+      }
+
+      if (age < 0 || age > 120) return "-";
+      return age;
+    },
+
     formatDateTime(d) {
       if (!d) return "-";
+
       const date = new Date(d);
       if (isNaN(date.getTime())) return "-";
 

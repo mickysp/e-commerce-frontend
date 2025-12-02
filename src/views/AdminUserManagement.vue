@@ -29,9 +29,7 @@
                     height="103"
                   />
                 </v-img>
-                <span class="no-data-text mb-4">
-                  ยังไม่มีรายการผู้ใช้
-                </span>
+                <span class="no-data-text mb-4"> ยังไม่มีรายการผู้ใช้ </span>
               </div>
             </v-col>
           </v-row>
@@ -73,10 +71,51 @@
                 <UserSelect
                   :search="search"
                   :selected-status="selectedStatus"
+                  :selected-online-status="selectedOnlineStatus"
                   @update:search="search = $event"
                   @update:selected-status="selectedStatus = $event"
+                  @update:selected-online-status="selectedOnlineStatus = $event"
                   @update:date-range="dateRange = $event"
                 />
+              </v-col>
+
+              <v-col cols="12" class="d-flex flex-wrap align-center mb-1">
+                <span class="age-summary-label mr-2 mb-1">
+                  อายุเฉลี่ยของผู้ใช้ในระบบ (จากผลการกรองปัจจุบัน)
+                  <span v-if="averageAgeInfo && averageAgeInfo.avg">
+                    • {{ averageAgeInfo.avg }} ปี
+                  </span>
+                </span>
+
+                <template
+                  v-if="
+                    averageAgeInfo &&
+                    averageAgeInfo.buckets &&
+                    averageAgeInfo.buckets.length
+                  "
+                >
+                  <v-chip
+                    v-for="bucket in averageAgeInfo.buckets"
+                    :key="bucket.key"
+                    small
+                    :color="bucket.color"
+                    :text-color="bucket.text"
+                    class="age-summary-chip mr-2 mb-1"
+                  >
+                    <v-icon left small v-if="bucket.icon">
+                      {{ bucket.icon }}
+                    </v-icon>
+                    <!-- ตัวอย่าง: 25–34 ปี (วัยเริ่มทำงาน) • 48% (120 คน) -->
+                    {{ bucket.label }} • {{ bucket.percent }}% ({{ bucket.count }} คน)
+                  </v-chip>
+                </template>
+
+                <span
+                  v-else
+                  class="no-age-text mb-1"
+                >
+                  - ไม่มีข้อมูลวันเกิด -
+                </span>
               </v-col>
 
               <v-col cols="12">
@@ -89,9 +128,10 @@
                 <template v-if="filteredUsers.length > 0">
                   <UserTable
                     :users="filteredUsers"
-                    :user-role="$store.getters.getRole"
+                    :user-role="normalizedRole"
                     @view="openDetail"
                     @delete="deleteUser"
+                    @toggle-suspend="toggleSuspend"
                   />
                 </template>
 
@@ -121,10 +161,7 @@
               </v-col>
             </v-row>
 
-            <UserDialog
-              v-model="dialogVisible"
-              :user="selectedUser"
-            />
+            <UserDialog v-model="dialogVisible" :user="selectedUser" />
           </v-card-text>
         </v-card>
       </template>
@@ -137,7 +174,11 @@ import UserStatsCards from "@/components/AdminUserManagement/Card.vue";
 import UserTable from "@/components/AdminUserManagement/Table.vue";
 import UserSelect from "@/components/AdminUserManagement/Select.vue";
 import UserDialog from "@/components/AdminUserManagement/Dialog.vue";
-import { getAdminUsersApi } from "@/services/api/adminServices";
+import {
+  getAdminUsersApi,
+  updateAdminUserStatusApi,
+} from "@/services/api/adminServices";
+import swalAlert from "@/services/alert/swalServices";
 
 export default {
   name: "AdminUserManagement",
@@ -150,6 +191,7 @@ export default {
       isLoading: false,
       search: "",
       selectedStatus: "all",
+      selectedOnlineStatus: "all",
       dateRange: [],
       dialogVisible: false,
       selectedUser: null,
@@ -161,12 +203,21 @@ export default {
   },
 
   computed: {
+    normalizedRole() {
+      const raw = (this.$store.getters.role || "")
+        .toString()
+        .trim()
+        .toLowerCase();
+      return raw;
+    },
+
     filteredUsers() {
       const card = this.getCardByIndex(this.selectedCardIndex);
       const now = Date.now();
       const sevenDaysAgo = now - 7 * 24 * 60 * 60 * 1000;
 
       const norm = (t) => (t || "").toString().trim().toLowerCase();
+
       const normalizeStatus = (status) => {
         const v = norm(status);
         if (v === "active") return "active";
@@ -198,31 +249,21 @@ export default {
       }
 
       if (this.selectedStatus && this.selectedStatus !== "all") {
-        if (this.selectedStatus === "active") {
-          result = result.filter((u) => normalizeStatus(u.status) === "active");
-        } else if (this.selectedStatus === "inactive") {
-          result = result.filter((u) => {
-            if (!u.createdAt) return false;
-            const ts = new Date(u.createdAt).getTime();
-            return ts >= sevenDaysAgo;
-          });
-        } else if (this.selectedStatus === "suspended") {
-          result = result.filter(
-            (u) => normalizeStatus(u.status) === "suspended"
-          );
-        }
+        const target = this.selectedStatus;
+        result = result.filter((u) => normalizeStatus(u.status) === target);
+      }
+
+      if (this.selectedOnlineStatus === "online") {
+        result = result.filter((u) => !!u.isOnline);
+      } else if (this.selectedOnlineStatus === "offline") {
+        result = result.filter((u) => !u.isOnline);
       }
 
       if ((this.search || "").trim()) {
         const kw = this.search.toLowerCase().trim();
 
         result = result.filter((u) => {
-          const fullName = [
-            u.prefix,
-            u.firstName,
-            u.middleName,
-            u.lastName,
-          ]
+          const fullName = [u.prefix, u.firstName, u.middleName, u.lastName]
             .map((x) => (x || "").trim())
             .filter(Boolean)
             .join(" ")
@@ -232,9 +273,7 @@ export default {
           const email = (u.email || "").toLowerCase();
 
           return (
-            fullName.includes(kw) ||
-            username.includes(kw) ||
-            email.includes(kw)
+            fullName.includes(kw) || username.includes(kw) || email.includes(kw)
           );
         });
       }
@@ -257,6 +296,119 @@ export default {
 
       return result;
     },
+
+    averageAgeInfo() {
+      const today = new Date();
+
+      const ages = this.filteredUsers
+        .map((u) => {
+          if (!u.birthDate) return null;
+          const d = new Date(u.birthDate);
+          if (isNaN(d.getTime())) return null;
+
+          let age = today.getFullYear() - d.getFullYear();
+          const m = today.getMonth() - d.getMonth();
+          if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
+            age--;
+          }
+          return age >= 0 ? age : null;
+        })
+        .filter((a) => a != null);
+
+      const total = ages.length;
+      if (!total) return null;
+
+      const sum = ages.reduce((s, a) => s + a, 0);
+      const avg = Math.round(sum / total);
+
+      const baseBuckets = [
+        {
+          key: "under_18",
+          label: "ต่ำกว่า 18 ปี",
+          min: 0,
+          max: 17,
+          color: "#FEF3C7",
+          text: "#92400E",
+          icon: "mdi-alert-circle-outline",
+        },
+        {
+          key: "18_24",
+          label: "18–24 ปี (วัยเรียน / วัยมหาวิทยาลัย)",
+          min: 18,
+          max: 24,
+          color: "#DBEAFE",
+          text: "#1D4ED8",
+          icon: "mdi-school",
+        },
+        {
+          key: "25_34",
+          label: "25–34 ปี (วัยเริ่มทำงาน)",
+          min: 25,
+          max: 34,
+          color: "#E1FAE8",
+          text: "#0FAE63",
+          icon: "mdi-briefcase",
+        },
+        {
+          key: "35_44",
+          label: "35–44 ปี (วัยทำงานเต็มที่)",
+          min: 35,
+          max: 44,
+          color: "#DCFCE7",
+          text: "#15803D",
+          icon: "mdi-briefcase",
+        },
+        {
+          key: "45_59",
+          label: "45–59 ปี (วัยก่อนเกษียณ)",
+          min: 45,
+          max: 59,
+          color: "#E5E7EB",
+          text: "#374151",
+          icon: "mdi-account-clock-outline",
+        },
+        {
+          key: "60_plus",
+          label: "60 ปีขึ้นไป (ผู้สูงอายุ)",
+          min: 60,
+          max: Infinity,
+          color: "#FCE7F3",
+          text: "#9D174D",
+          icon: "mdi-human-cane",
+        },
+      ];
+
+      const bucketStats = baseBuckets.map((b) => ({
+        ...b,
+        count: 0,
+      }));
+
+      // แจกอายุลงแต่ละช่วง
+      for (const age of ages) {
+        const bucket = bucketStats.find((b) => age >= b.min && age <= b.max);
+        if (!bucket) continue;
+        bucket.count += 1;
+      }
+
+      const buckets = bucketStats
+        .filter((b) => b.count > 0)
+        .map((b) => ({
+          key: b.key,
+          label: b.label,
+          color: b.color,
+          text: b.text,
+          icon: b.icon,
+          count: b.count,
+          percent: Math.round((b.count / total) * 100),
+        }))
+        .sort((a, b) => b.percent - a.percent);
+
+      return {
+        avg,
+        total,
+        buckets,
+      };
+    },
   },
 
   methods: {
@@ -264,7 +416,7 @@ export default {
       this.isLoading = true;
       try {
         const data = await getAdminUsersApi();
-        this.users = data.users || [];
+        this.users = (data && data.users) || [];
       } catch (err) {
         console.error("[AdminUserManagement] loadUsers error:", err);
         this.users = [];
@@ -295,6 +447,52 @@ export default {
     deleteUser(user) {
       console.log("delete user", user);
     },
+
+    async toggleSuspend(user) {
+      const me = this.$store?.state?.user?._id || "";
+      if (me && user._id === me) {
+        await swalAlert.Warning(
+          "ไม่สามารถระงับบัญชีตัวเองได้",
+          "คุณไม่สามารถระงับบัญชีของตัวเองได้"
+        );
+        return;
+      }
+
+      const isSuspended =
+        (user.status || "").toString().trim().toLowerCase() === "suspended";
+
+      const { isConfirmed } = await swalAlert.Confirm({
+        title: isSuspended
+          ? "ยืนยันการยกเลิกระงับบัญชี"
+          : "ยืนยันการระงับบัญชี",
+        message: `คุณต้องการ${
+          isSuspended ? "เปิดการใช้งานบัญชีของ" : "ระงับบัญชีของ"
+        } ${user.firstName || user.username || "-"} ใช่หรือไม่?`,
+        icon: "warning",
+      });
+
+      if (!isConfirmed) return;
+
+      try {
+        const nextStatus = isSuspended ? "active" : "suspended";
+        const res = await updateAdminUserStatusApi(user._id, nextStatus);
+
+        this.users = this.users.map((u) =>
+          u._id === user._id
+            ? { ...u, status: res.user.status, isOnline: res.user.isOnline }
+            : u
+        );
+
+        await swalAlert.Success(res.message || "อัปเดตสถานะสำเร็จ");
+      } catch (err) {
+        await swalAlert.Error(
+          "เกิดข้อผิดพลาด",
+          err?.response?.data?.message ||
+            err?.message ||
+            "ไม่สามารถอัปเดตสถานะผู้ใช้ได้"
+        );
+      }
+    },
   },
 };
 </script>
@@ -318,5 +516,22 @@ export default {
   font-size: 14px;
   font-weight: 400;
   color: #6b717f;
+}
+.age-summary-label {
+  font-size: 14px;
+  font-weight: 400;
+  color: #6b717f;
+}
+.age-summary-chip {
+  border-radius: 999px !important;
+  font-size: 12px !important;
+  font-weight: 500 !important;
+}
+
+.no-age-text {
+  font-size: 14px;
+  font-weight: 400;
+  color: #9ca3af;
+  margin-left: 4px;
 }
 </style>

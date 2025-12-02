@@ -60,6 +60,39 @@
                 </div>
                 <span>รายละเอียด</span>
               </v-btn>
+
+              <!-- ปุ่มระงับ / ยกเลิกระงับบัญชี (เฉพาะ superadmin) -->
+              <v-btn
+                v-if="isSuperAdmin"
+                color="#1F2A39"
+                text
+                class="d-flex align-center action-btn ml-2"
+                @click="$emit('toggle-suspend', item)"
+              >
+                <div class="detail-btn mr-2">
+                  <v-icon
+                    size="20"
+                    :color="
+                      (item.status || '').toLowerCase() === 'suspended'
+                        ? '#10B981'
+                        : '#EF4444'
+                    "
+                  >
+                    {{
+                      (item.status || '').toLowerCase() === 'suspended'
+                        ? 'mdi-lock-open-outline'
+                        : 'mdi-block-helper'
+                    }}
+                  </v-icon>
+                </div>
+                <span>
+                  {{
+                    (item.status || '').toLowerCase() === 'suspended'
+                      ? 'ยกเลิกระงับบัญชี'
+                      : 'ระงับบัญชี'
+                  }}
+                </span>
+              </v-btn>
             </div>
           </template>
         </v-data-table>
@@ -169,15 +202,22 @@ export default {
       return opt ? opt.text : this.itemsPerPage;
     },
 
+    // เช็ก role superadmin จาก prop
     isSuperAdmin() {
-      return (this.userRole || "").toString().toLowerCase() === "superadmin";
+      return (this.userRole || "")
+        .toString()
+        .trim()
+        .toLowerCase() === "superadmin";
     },
+
     hasVisibleDeleteButton() {
-      return false;
+      return this.isSuperAdmin;
     },
+
     actionsColWidth() {
       return this.hasVisibleDeleteButton ? 192 : 130;
     },
+
     tableVars() {
       return {
         "--actions-col": `${this.actionsColWidth}px`,
@@ -318,13 +358,7 @@ export default {
         };
       }
 
-      const lastLogin = user.lastLoginAt ? new Date(user.lastLoginAt) : null;
-      const ONLINE_MIN = 10;
-
-      const isOnline =
-        lastLogin && Date.now() - lastLogin.getTime() <= ONLINE_MIN * 60 * 1000;
-
-      if (isOnline) {
+      if (user.isOnline) {
         return {
           label: "ผู้ใช้ออนไลน์",
           color: "#E1FAE8",

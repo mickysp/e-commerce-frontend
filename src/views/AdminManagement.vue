@@ -11,7 +11,7 @@
       <v-card class="card-container d-flex pa-6" elevation="0">
         <v-row>
           <v-col cols="12">
-            <span class="title-text">แดชบอร์ด</span>
+            <span class="title-text">จัดการผู้ดูแลระบบ</span>
           </v-col>
 
           <v-col
@@ -28,7 +28,7 @@
                   height="103"
                 />
               </v-img>
-              <span class="no-data-text mb-4"> ยังไม่มีข้อมูล </span>
+              <span class="no-data-text mb-4"> ยังไม่มีรายการผู้ดูแลระบบ </span>
             </div>
           </v-col>
         </v-row>
@@ -39,7 +39,7 @@
 
 <script>
 export default {
-  name: "AdminDashboard",
+  name: "AdminManagement",
   components: {},
 
   data() {

@@ -2,6 +2,8 @@ import Vue from "vue";
 import Vuex from "vuex";
 import createPersistedState from "vuex-persistedstate";
 
+import { connectUserSocket, disconnectUserSocket } from "@/plugins/socket";
+
 Vue.use(Vuex);
 
 function decodeJwt(token = "") {
@@ -105,6 +107,7 @@ export default new Vuex.Store({
       if (username) return username;
       return email || "ผู้ใช้";
     },
+
     fullName: (state) => {
       const { prefix, firstName, middleName, lastName } = state.user;
       return [prefix, firstName, middleName, lastName]
@@ -112,15 +115,19 @@ export default new Vuex.Store({
         .join(" ")
         .trim();
     },
+
     avatarUrl: (state) => state.user.profileImage || "",
 
     role: (state, getters) =>
       (getters.tokenPayload?.role || state.user.role || "user").toLowerCase(),
 
+    getRole: (state, getters) => getters.role,
+
     isAdmin: (state, getters) => getters.role === "admin",
     isSeller: (state, getters) => getters.role === "seller",
     userId: (state) => state.user._id || "",
     defaultAddressId: (state) => state.user.defaultAddress || null,
+
     maskedEmail: (state) => {
       const email = state.user.email || "";
       const [name, domain] = email.split("@");
@@ -131,8 +138,8 @@ export default new Vuex.Store({
           : name.slice(0, 2) + "*".repeat(Math.max(1, name.length - 2));
       return `${masked}@${domain}`;
     },
-    referralInfo: (state) => state.user.referral,
 
+    referralInfo: (state) => state.user.referral,
     sellerInfo: (state) => state.seller,
   },
 
@@ -202,13 +209,22 @@ export default new Vuex.Store({
   },
 
   actions: {
+    // login ฝั่ง user
     loginSuccess({ commit }, { token, loginBy = "password", user }) {
       commit("SET_AUTH", { access_token: token, login_by: loginBy });
       commit("SET_USER", user);
+
+      const userId = user?.id || user?._id;
+      if (userId) {
+        connectUserSocket(userId);
+      }
     },
 
     loginSellerSuccess({ commit }, { token, seller }) {
-      commit("SET_AUTH", { access_token: token, login_by: "seller_password" });
+      commit("SET_AUTH", {
+        access_token: token,
+        login_by: "seller_password",
+      });
       commit("SET_SELLER", {
         sellerId: seller.id,
         shopName: seller.shopName,
@@ -219,12 +235,22 @@ export default new Vuex.Store({
 
     logout({ commit }, payload = {}) {
       const authGroup = payload.authGroup || "user";
+
+      if (authGroup === "user") {
+        disconnectUserSocket();
+      }
+
       commit("RESET_STATE");
       clearAuthFromStorage(authGroup);
     },
 
     forceLogout({ commit }, payload = {}) {
       const authGroup = payload.authGroup || "user";
+
+      if (authGroup === "user") {
+        disconnectUserSocket();
+      }
+
       commit("RESET_STATE");
       clearAuthFromStorage(authGroup);
     },
@@ -235,6 +261,7 @@ export default new Vuex.Store({
         value: addressId || null,
       });
     },
+
     updateReferralCode({ commit }, code) {
       commit("UPDATE_USER_FIELD", {
         key: "referral.referralCode",

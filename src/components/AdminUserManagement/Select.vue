@@ -1,5 +1,6 @@
 <template>
   <v-row>
+    <!-- ช่องค้นหา -->
     <v-col cols="12" md="4" class="d-flex align-end px-2">
       <v-text-field
         :value="search"
@@ -23,8 +24,9 @@
       </v-text-field>
     </v-col>
 
+    <!-- สถานะบัญชี -->
     <v-col cols="12" md="2" class="px-2">
-      <span class="title-select-text">สถานะผู้ใช้</span>
+      <span class="title-select-text">สถานะบัญชี</span>
       <v-select
         v-model="statusModel"
         :items="statusItems"
@@ -49,6 +51,34 @@
       </v-select>
     </v-col>
 
+    <!-- ✅ สถานะออนไลน์ (ใหม่) -->
+    <v-col cols="12" md="2" class="px-2">
+      <span class="title-select-text">สถานะออนไลน์</span>
+      <v-select
+        v-model="onlineStatusModel"
+        :items="onlineStatusItems"
+        :menu-props="{ offsetY: true }"
+        placeholder="ทั้งหมด"
+        hide-details
+        outlined
+        dense
+        class="rounded-lg"
+        item-text="text"
+        item-value="value"
+      >
+        <template v-slot:append>
+          <v-img
+            src="@/assets/select/expand_icon.png"
+            width="16"
+            height="16"
+            contain
+            class="icon-rotate mt-1"
+          />
+        </template>
+      </v-select>
+    </v-col>
+
+    <!-- วันที่ลงทะเบียน -->
     <v-col cols="12" md="3" class="px-2">
       <span class="title-select-text">วันที่ลงทะเบียน</span>
       <v-menu
@@ -88,6 +118,7 @@
       </v-menu>
     </v-col>
 
+    <!-- ล้างค่า -->
     <v-col cols="12" md="1" class="d-flex justify-start align-end px-2">
       <span
         class="clear-btn-text mb-2"
@@ -105,8 +136,13 @@ export default {
   name: "UserSelect",
   props: {
     search: { type: String, default: "" },
+
+    // เดิมมีอยู่แล้ว
     selectedRole: { type: String, default: "all" },
     selectedStatus: { type: String, default: "all" },
+
+    // ✅ เพิ่ม prop สำหรับสถานะออนไลน์
+    selectedOnlineStatus: { type: String, default: "all" }, // all | online | offline
   },
 
   data() {
@@ -114,11 +150,20 @@ export default {
       menuDatePicker: false,
       internalDate: null,
       pickerDate: new Date().toISOString().substr(0, 7),
+
+      // map ตรงกับฟิลด์ status ใน DB
       statusItems: [
         { text: "ทั้งหมด", value: "all" },
-        { text: "กำลังใช้งาน", value: "active" },
-        { text: "ช่วง 7 วันที่ผ่านมา", value: "inactive" },
-        { text: "ถูกระงับบัญชี", value: "suspended" },
+        { text: "ใช้งานปกติ", value: "active" },
+        { text: "ปิดการใช้งาน", value: "inactive" },
+        { text: "ถูกระงับโดยผู้ดูแลระบบ", value: "suspended" },
+      ],
+
+      // สำหรับ isOnline
+      onlineStatusItems: [
+        { text: "ทั้งหมด", value: "all" },
+        { text: "ออนไลน์", value: "online" },
+        { text: "ออฟไลน์", value: "offline" },
       ],
     };
   },
@@ -138,6 +183,16 @@ export default {
       },
       set(v) {
         this.$emit("update:selected-status", v);
+      },
+    },
+
+    // ✅ v-model ให้กับ select สถานะออนไลน์
+    onlineStatusModel: {
+      get() {
+        return this.selectedOnlineStatus || "all";
+      },
+      set(v) {
+        this.$emit("update:selected-online-status", v);
       },
     },
 
@@ -175,6 +230,8 @@ export default {
       this.$emit("update:search", "");
       this.$emit("update:selected-role", "all");
       this.$emit("update:selected-status", "all");
+      this.$emit("update:selected-online-status", "all"); // ✅ เคลียร์สถานะออนไลน์ด้วย
+
       this.internalDate = null;
       this.pickerDate = new Date().toISOString().substr(0, 7);
       this.$emit("update:date-range", []);

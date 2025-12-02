@@ -153,7 +153,7 @@ export default {
           icon: "mdi-view-dashboard-outline",
         },
         {
-          label: "จัดการออเดอร์",
+          label: "จัดการคำสั่งซื้อ",
           to: "/admin/orders",
           icon: "mdi-receipt-text-outline",
         },
@@ -168,7 +168,7 @@ export default {
           icon: "mdi-format-list-bulleted-type",
         },
         {
-          label: "จัดการบอร์ด/ข่าว",
+          label: "จัดการข่าว",
           to: "/admin/boards",
           icon: "mdi-bullhorn-outline",
         },
@@ -183,7 +183,7 @@ export default {
           icon: "mdi-store-outline",
         },
         {
-          label: "จัดการแอดมิน",
+          label: "จัดการผู้ดูแลระบบ",
           to: "/admin/admins",
           icon: "mdi-shield-account-outline",
         },
